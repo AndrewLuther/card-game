@@ -1,0 +1,30 @@
+{
+  "name": "card-game",
+  "version": "0.1.0",
+  "description": "andrew card game",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsx ./src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AndrewLuther/card-game.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AndrewLuther/card-game/issues"
+  },
+  "homepage": "https://github.com/AndrewLuther/card-game#readme",
+  "dependencies": {
+    "@libsql/client": "^0.17.2",
+    "discord.js": "^14.26.2",
+    "dotenv": "^17.4.1",
+    "drizzle-orm": "^0.45.2"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0"
+  }
+}
