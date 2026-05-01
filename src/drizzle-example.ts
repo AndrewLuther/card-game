@@ -8,6 +8,7 @@ async function main() {
     .values({
       name: "Andrew",
       discordSnowflake: "194910567188791297",
+      packVouchers: 0,
     })
     .returning();
 
@@ -17,14 +18,14 @@ async function main() {
   const users = await db.select().from(userTable);
   console.log("Getting all users from the database: ", users);
 
-  await db
-    .update(userTable)
-    .set({
-      name: "thedollylama",
-    })
-    .where(eq(userTable.id, user.id));
+  // await db
+  //   .update(userTable)
+  //   .set({
+  //     name: "thedollylama",
+  //   })
+  //   .where(eq(userTable.id, user.id));
 
-  console.log("User info updated!");
+  // console.log("User info updated!");
   //await db.delete(userTable).where(eq(userTable.id, user.id));
   //console.log("User deleted!");
 }

@@ -33,6 +33,15 @@ const commands: Command[] = [
       await interaction.reply(`Pong!, we have ${count} users in the db.`);
     },
   },
+  {
+    data: new SlashCommandBuilder()
+      .setName("voucher")
+      .setDescription("Receive your daily pack vouchers."),
+    async execute(interaction) {
+      const count = await db.$count(userTable);
+      await interaction.reply(`Pong!, we have ${count} users in the db.`);
+    },
+  },
 ];
 
 // Register
