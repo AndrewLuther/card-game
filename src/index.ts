@@ -19,6 +19,23 @@ const GUILD_ID = process.env.DISCORD_GUILD_ID; // optional
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
+// creates a new user in the db if the user isn't added yet
+async function createNewUser(interaction: ChatInputCommandInteraction) {
+  const users = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.discordSnowflake, interaction.member?.user.id!));
+
+  if (users.length == 0) {
+    // add the user to the db
+    await db.insert(userTable).values({
+      name: interaction.member?.user.username!,
+      discordSnowflake: interaction.member?.user.id!,
+      packVouchers: 0,
+    });
+  }
+}
+
 type Command = {
   data: SlashCommandBuilder;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
@@ -39,6 +56,7 @@ const commands: Command[] = [
       .setName("voucher-number")
       .setDescription("See how many vouchers you have."),
     async execute(interaction) {
+      await createNewUser(interaction);
       const vouchers = await db
         .select({ vouchers: userTable.packVouchers })
         .from(userTable)
@@ -54,6 +72,7 @@ const commands: Command[] = [
       .setName("voucher-receive")
       .setDescription("Receive your daily pack vouchers."),
     async execute(interaction) {
+      await createNewUser(interaction);
       const vouchers = await db
         .select({ vouchers: userTable.packVouchers })
         .from(userTable)
