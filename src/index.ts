@@ -11,6 +11,7 @@ import {
 } from "discord.js";
 import { db } from "./db/db";
 import { userTable } from "./db/schema";
+import { eq } from "drizzle-orm";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN!;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
@@ -26,20 +27,54 @@ type Command = {
 const commands: Command[] = [
   {
     data: new SlashCommandBuilder()
-      .setName("ping")
-      .setDescription("Replies with Pong!"),
+      .setName("users")
+      .setDescription("Get Number of Users from the db."),
     async execute(interaction) {
       const count = await db.$count(userTable);
-      await interaction.reply(`Pong!, we have ${count} users in the db.`);
+      await interaction.reply(`We have ${count} users in the db.`);
     },
   },
   {
     data: new SlashCommandBuilder()
-      .setName("voucher")
+      .setName("voucher-number")
+      .setDescription("See how many vouchers you have."),
+    async execute(interaction) {
+      const vouchers = await db
+        .select({ vouchers: userTable.packVouchers })
+        .from(userTable)
+        .where(eq(userTable.discordSnowflake, interaction.member?.user.id!));
+
+      let voucher = vouchers[0]!["vouchers"];
+      console.log(voucher);
+      await interaction.reply(`You have ${voucher} pack vouchers!`);
+    },
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("voucher-receive")
       .setDescription("Receive your daily pack vouchers."),
     async execute(interaction) {
-      const count = await db.$count(userTable);
-      await interaction.reply(`Pong!, we have ${count} users in the db.`);
+      const vouchers = await db
+        .select({ vouchers: userTable.packVouchers })
+        .from(userTable)
+        .where(eq(userTable.discordSnowflake, interaction.member?.user.id!));
+
+      let voucher = vouchers[0]!["vouchers"];
+      if (!voucher) voucher = 0;
+
+      const newCount = voucher + 1;
+
+      const userResult = await db
+        .update(userTable)
+        .set({ packVouchers: newCount })
+        .where(eq(userTable.discordSnowflake, interaction.member?.user.id!))
+        .returning();
+
+      const user = userResult[0]!;
+
+      await interaction.reply(
+        `You now have ${user.packVouchers} pack vouchers.`,
+      );
     },
   },
 ];
