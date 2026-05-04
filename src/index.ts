@@ -10,7 +10,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import { db } from "./db/db";
-import { userTable } from "./db/schema";
+import { packTable, userTable } from "./db/schema";
 import { eq } from "drizzle-orm";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN!;
@@ -36,6 +36,17 @@ async function createNewUser(interaction: ChatInputCommandInteraction) {
   }
 }
 
+async function getVoucherCount(interaction: ChatInputCommandInteraction) {
+  const vouchers = await db
+    .select({ vouchers: userTable.packVouchers })
+    .from(userTable)
+    .where(eq(userTable.discordSnowflake, interaction.member?.user.id!));
+
+  let voucher = vouchers[0]!["vouchers"];
+  if (!voucher) voucher = 0;
+  return voucher;
+}
+
 type Command = {
   data: SlashCommandBuilder;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
@@ -53,17 +64,53 @@ const commands: Command[] = [
   },
   {
     data: new SlashCommandBuilder()
+      .setName("buy-pack")
+      .setDescription("Buy a pack using a pack voucher."),
+    async execute(interaction) {
+      await createNewUser(interaction);
+      const voucher = await getVoucherCount(interaction);
+      if (voucher == 0) {
+        interaction.reply(
+          `You don't have any pack vouchers! If you haven't already, use voucher-receive to receive your daily vouchers.`,
+        );
+      } else {
+        // should these multiple transactions happen with one command? Don't want things getting out of sync
+        const userResult = await db
+          .update(userTable)
+          .set({ packVouchers: voucher - 1 })
+          .where(eq(userTable.discordSnowflake, interaction.member?.user.id!))
+          .returning();
+        const user = userResult[0]!;
+
+        await db.insert(packTable).values({
+          user_id: user.id,
+          set_id: 0,
+        });
+
+        const packs = await db
+          .select({ userId: packTable.user_id })
+          .from(packTable)
+          .where(eq(packTable.user_id, user.id));
+
+        await interaction.reply(
+          `You now have ${packs.length} unopened packs! (${user.packVouchers} pack vouchers remaining)`,
+        );
+      }
+    },
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("open-pack")
+      .setDescription("Open one of your packs."),
+    async execute(interaction) {},
+  },
+  {
+    data: new SlashCommandBuilder()
       .setName("voucher-number")
       .setDescription("See how many vouchers you have."),
     async execute(interaction) {
       await createNewUser(interaction);
-      const vouchers = await db
-        .select({ vouchers: userTable.packVouchers })
-        .from(userTable)
-        .where(eq(userTable.discordSnowflake, interaction.member?.user.id!));
-
-      let voucher = vouchers[0]!["vouchers"];
-      console.log(voucher);
+      const voucher = await getVoucherCount(interaction);
       await interaction.reply(`You have ${voucher} pack vouchers!`);
     },
   },
@@ -73,26 +120,18 @@ const commands: Command[] = [
       .setDescription("Receive your daily pack vouchers."),
     async execute(interaction) {
       await createNewUser(interaction);
-      const vouchers = await db
-        .select({ vouchers: userTable.packVouchers })
-        .from(userTable)
-        .where(eq(userTable.discordSnowflake, interaction.member?.user.id!));
-
-      let voucher = vouchers[0]!["vouchers"];
+      let voucher = await getVoucherCount(interaction);
       if (!voucher) voucher = 0;
-
-      const newCount = voucher + 1;
 
       const userResult = await db
         .update(userTable)
-        .set({ packVouchers: newCount })
+        .set({ packVouchers: voucher + 1 })
         .where(eq(userTable.discordSnowflake, interaction.member?.user.id!))
         .returning();
-
       const user = userResult[0]!;
 
       await interaction.reply(
-        `You now have ${user.packVouchers} pack vouchers.`,
+        `You now have ${user.packVouchers} pack vouchers!`,
       );
     },
   },
