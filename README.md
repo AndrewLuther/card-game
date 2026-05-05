@@ -1,6 +1,6 @@
 # Discord Card Collector
 
-This is a work in progress project that I began developing recently to expand my experience with databases. I'm using [drizzle ORM](https://orm.drizzle.team/) and [discord.js](https://discord.js.org/) to create a discord bot that allows users to collect and trade virtual cards with each other. The database is a SQLite database, and the project will be hosted on my [digitalocean droplet](https://www.digitalocean.com/products/droplets) once a usable version is complete.
+This is a work in progress personal project that I began developing recently to expand my experience with databases. I'm using [drizzle ORM](https://orm.drizzle.team/) and [discord.js](https://discord.js.org/) to create a discord bot that allows users to collect and trade virtual cards with each other. The database is a SQLite database, and the project will be hosted on my [digitalocean droplet](https://www.digitalocean.com/products/droplets) once a usable version is complete.
 
 The digital cards will use custom art which I plan to draw myself using a free open-source drawing program called [Krita](https://krita.org/en/).
 
