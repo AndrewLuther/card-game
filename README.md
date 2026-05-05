@@ -26,4 +26,4 @@ The digital cards will use custom art which I plan to draw myself using a free o
 
 ## DB Schema
 
-Work in progress
+<img src="schema.png" />
