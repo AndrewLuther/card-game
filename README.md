@@ -4,12 +4,19 @@ This is a work in progress personal project that I began developing recently to 
 
 The digital cards will use custom art which I plan to draw myself using a free open-source drawing program called [Krita](https://krita.org/en/).
 
+## DB Schema
+
+A rough idea of my plan for the database. Diagram created using [dbdiagram](https://dbdiagram.io/home).
+
+<img src="schema.png" />
+
 ## User Stories
+
+Some rough plans for how users will interact with the bot.
 
 **open daily pack:**
 
 ```/open {set_id}``` --> spends a pack voucher and gives the user x random cards from the specified set
-
 
 **view collection:**
 
@@ -23,7 +30,3 @@ The digital cards will use custom art which I plan to draw myself using a free o
 ```/trade-view``` --> lists all trades that have been proposed to the user who initiates the command
 
 ```/trade-accept {trade_id}``` --> accepts the trade
-
-## DB Schema
-
-<img src="schema.png" />
