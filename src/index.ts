@@ -24,13 +24,13 @@ async function createNewUser(interaction: ChatInputCommandInteraction) {
   const users = await db
     .select()
     .from(userTable)
-    .where(eq(userTable.discordSnowflake, interaction.member?.user.id!));
+    .where(eq(userTable.discordSnowflake, interaction.user.id!));
 
   if (users.length == 0) {
     // add the user to the db
     await db.insert(userTable).values({
-      name: interaction.member?.user.username!,
-      discordSnowflake: interaction.member?.user.id!,
+      name: interaction.user.username!,
+      discordSnowflake: interaction.user.id!,
       packVouchers: 0,
     });
   }
@@ -40,11 +40,29 @@ async function getVoucherCount(interaction: ChatInputCommandInteraction) {
   const vouchers = await db
     .select({ vouchers: userTable.packVouchers })
     .from(userTable)
-    .where(eq(userTable.discordSnowflake, interaction.member?.user.id!));
+    .where(eq(userTable.discordSnowflake, interaction.user.id!));
 
   let voucher = vouchers[0]!["vouchers"];
   if (!voucher) voucher = 0;
   return voucher;
+}
+
+async function getUser(interaction: ChatInputCommandInteraction) {
+  const userResult = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.discordSnowflake, interaction.user.id!));
+  const user = userResult[0]!;
+  return user;
+}
+
+async function getPacks(interaction: ChatInputCommandInteraction) {
+  const user = await getUser(interaction);
+  const packs = await db
+    .select()
+    .from(packTable)
+    .where(eq(packTable.user_id, user.id));
+  return packs;
 }
 
 type Command = {
@@ -78,7 +96,7 @@ const commands: Command[] = [
         const userResult = await db
           .update(userTable)
           .set({ packVouchers: voucher - 1 })
-          .where(eq(userTable.discordSnowflake, interaction.member?.user.id!))
+          .where(eq(userTable.discordSnowflake, interaction.user.id!))
           .returning();
         const user = userResult[0]!;
 
@@ -87,10 +105,7 @@ const commands: Command[] = [
           set_id: 0,
         });
 
-        const packs = await db
-          .select({ userId: packTable.user_id })
-          .from(packTable)
-          .where(eq(packTable.user_id, user.id));
+        const packs = await getPacks(interaction);
 
         await interaction.reply(
           `You now have ${packs.length} unopened packs! (${user.packVouchers} pack vouchers remaining)`,
@@ -102,7 +117,25 @@ const commands: Command[] = [
     data: new SlashCommandBuilder()
       .setName("open-pack")
       .setDescription("Open one of your packs."),
-    async execute(interaction) {},
+    async execute(interaction) {
+      await createNewUser(interaction);
+      const packs = await getPacks(interaction);
+      if (packs.length <= 0) {
+        await interaction.reply(
+          `You don't own any packs! Use /buy-pack to purchase one.`,
+        );
+      } else {
+        // for now just open the first pack
+        const packToOpen = packs[0]?.id!;
+        // remove pack from db
+        await db.delete(packTable).where(eq(packTable.id, packToOpen));
+
+        await interaction.reply({
+          content: "Here are your cards!",
+          files: ["public/images/smiley.png", "public/images/frowney.png"],
+        });
+      }
+    },
   },
   {
     data: new SlashCommandBuilder()
@@ -126,7 +159,7 @@ const commands: Command[] = [
       const userResult = await db
         .update(userTable)
         .set({ packVouchers: voucher + 1 })
-        .where(eq(userTable.discordSnowflake, interaction.member?.user.id!))
+        .where(eq(userTable.discordSnowflake, interaction.user.id!))
         .returning();
       const user = userResult[0]!;
 
