@@ -13,6 +13,20 @@ export const packTable = sqliteTable("pack", {
   set_id: int().notNull(),
 });
 
+export const cardTable = sqliteTable("card", {
+  id: int().primaryKey({ autoIncrement: true }),
+  user_id: int().notNull(),
+  cardtype_id: int().notNull(),
+});
+
+export const cardtypeTable = sqliteTable("cardtype", {
+  id: int().primaryKey({ autoIncrement: true }),
+  set_id: int().notNull(),
+  name: text().notNull(),
+  image_path: text().notNull(),
+  rarity: int().notNull(),
+});
+
 export const setTable = sqliteTable("set", {
   id: int().primaryKey({ autoIncrement: true }),
   name: text().notNull(),

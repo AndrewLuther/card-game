@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx ./src/index.ts",
-    "db_update": "tsx ./src/drizzle-example.ts"
+    "db_example": "tsx ./src/drizzle-example.ts",
+    "cardtype_update": "tsx ./src/cardTypes.ts"
   },
   "repository": {
     "type": "git",

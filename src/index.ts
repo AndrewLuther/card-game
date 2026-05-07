@@ -10,7 +10,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import { db } from "./db/db";
-import { packTable, userTable } from "./db/schema";
+import { cardTable, cardtypeTable, packTable, userTable } from "./db/schema";
 import { eq } from "drizzle-orm";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN!;
@@ -125,14 +125,43 @@ const commands: Command[] = [
           `You don't own any packs! Use /buy-pack to purchase one.`,
         );
       } else {
-        // for now just open the first pack
-        const packToOpen = packs[0]?.id!;
-        // remove pack from db
-        await db.delete(packTable).where(eq(packTable.id, packToOpen));
+        const user = await getUser(interaction);
 
+        // for now just open the first pack
+        const packToOpen = packs[0];
+
+        // define this somewhere else?
+        const cardsPerPack = 5;
+
+        // remove pack from db
+        await db.delete(packTable).where(eq(packTable.id, packToOpen?.id!));
+
+        // get the cardTypes that may exist within this pack
+        const cardTypes = await db
+          .select()
+          .from(cardtypeTable)
+          .where(eq(cardtypeTable.set_id, packToOpen?.set_id!));
+
+        // TODO: Code for card rarity, need to create a rarity table that defines different rarities of cards and their probabilities
+
+        type Card = { user_id: number; cardtype_id: number };
+        const cards: Array<Card> = [];
+        const cardImagePaths: Array<string> = [];
+
+        // create the cards
+        for (let i = 0; i < cardsPerPack; i++) {
+          const cardtypeIndex = Math.floor(Math.random() * cardTypes.length);
+          const cardType = cardTypes[cardtypeIndex];
+          cards.push({ user_id: user.id, cardtype_id: cardType?.id! });
+          cardImagePaths.push(cardType?.image_path!);
+        }
+
+        await db.insert(cardTable).values(cards);
+
+        // display the cards that were received
         await interaction.reply({
           content: "Here are your cards!",
-          files: ["public/images/smiley.png", "public/images/frowney.png"],
+          files: cardImagePaths,
         });
       }
     },
