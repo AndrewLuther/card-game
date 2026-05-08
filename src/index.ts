@@ -10,8 +10,14 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import { db } from "./db/db";
-import { cardTable, cardtypeTable, packTable, userTable } from "./db/schema";
-import { eq } from "drizzle-orm";
+import {
+  cardrarityTable,
+  cardTable,
+  cardtypeTable,
+  packTable,
+  userTable,
+} from "./db/schema";
+import { eq, and } from "drizzle-orm";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN!;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
@@ -142,7 +148,21 @@ const commands: Command[] = [
           .from(cardtypeTable)
           .where(eq(cardtypeTable.set_id, packToOpen?.set_id!));
 
-        // TODO: Code for card rarity, need to create a rarity table that defines different rarities of cards and their probabilities
+        type Rarity = { id: number; value: number };
+        const cardrarities: Array<Rarity> = [];
+
+        for (let i = 0; i < cardTypes.length; i++) {
+          const cardType = cardTypes[i];
+          const cardTypeRarities = await db
+            .select()
+            .from(cardrarityTable)
+            .where(eq(cardrarityTable.id, cardType?.rarity_id!));
+          const cardTypeRarity = cardTypeRarities[0];
+
+          cardrarities.push(cardTypeRarity!);
+        }
+
+        cardrarities.sort((a, b) => b.value - a.value);
 
         type Card = { user_id: number; cardtype_id: number };
         const cards: Array<Card> = [];
@@ -150,8 +170,38 @@ const commands: Command[] = [
 
         // create the cards
         for (let i = 0; i < cardsPerPack; i++) {
-          const cardtypeIndex = Math.floor(Math.random() * cardTypes.length);
-          const cardType = cardTypes[cardtypeIndex];
+          // determine which cardrarity is randomly selected
+          let rarity = cardrarities[0];
+          const random = Math.random() * 100;
+          console.log(random);
+          for (let j = 0; j < cardrarities.length; j++) {
+            if (random < cardrarities[j]!.value) {
+              console.log(
+                "The random value is " +
+                  random +
+                  " and the cardrarities value is " +
+                  cardrarities[j]!.value,
+              );
+              rarity = cardrarities[j];
+            }
+          }
+          console.log(rarity?.id);
+
+          // get all card with this rarity from db
+          const cardTypesWithRarity = await db
+            .select()
+            .from(cardtypeTable)
+            .where(
+              and(
+                eq(cardtypeTable.rarity_id, rarity?.id!),
+                eq(cardtypeTable.set_id, packToOpen?.set_id!),
+              ),
+            );
+
+          const cardtypeIndex = Math.floor(
+            Math.random() * cardTypesWithRarity.length,
+          );
+          const cardType = cardTypesWithRarity[cardtypeIndex];
           cards.push({ user_id: user.id, cardtype_id: cardType?.id! });
           cardImagePaths.push(cardType?.image_path!);
         }

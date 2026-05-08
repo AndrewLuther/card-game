@@ -1,10 +1,26 @@
 import "dotenv/config"; // allows us to read .env file
 import { db } from "./db/db";
-import { cardtypeTable } from "./db/schema";
+import { cardtypeTable, cardrarityTable } from "./db/schema";
 
 async function main() {
   // delete all cardTypes so they can be recreated
   await db.delete(cardtypeTable);
+  await db.delete(cardrarityTable);
+
+  await db.insert(cardrarityTable).values([
+    {
+      id: 0,
+      value: 100,
+    },
+    {
+      id: 1,
+      value: 30,
+    },
+    {
+      id: 2,
+      value: 5,
+    },
+  ]);
 
   // insert all the cardTypes again
   await db.insert(cardtypeTable).values([
@@ -12,13 +28,13 @@ async function main() {
       set_id: 0,
       name: "smiley",
       image_path: "public/images/smiley.png",
-      rarity: 1,
+      rarity_id: 0,
     },
     {
       set_id: 0,
       name: "frowney",
       image_path: "public/images/frowney.png",
-      rarity: 1,
+      rarity_id: 2,
     },
   ]);
 }

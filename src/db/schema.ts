@@ -24,7 +24,7 @@ export const cardtypeTable = sqliteTable("cardtype", {
   set_id: int().notNull(),
   name: text().notNull(),
   image_path: text().notNull(),
-  rarity: int().notNull(),
+  rarity_id: int().notNull(),
 });
 
 export const setTable = sqliteTable("set", {
@@ -32,4 +32,9 @@ export const setTable = sqliteTable("set", {
   name: text().notNull(),
   imagePath: text().notNull(),
   packsRemaining: int().notNull(),
+});
+
+export const cardrarityTable = sqliteTable("cardrarity", {
+  id: int().primaryKey(),
+  value: int().notNull(),
 });
