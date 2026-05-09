@@ -36,6 +36,18 @@ async function main() {
       image_path: "public/images/equi.png",
       rarity_id: 1,
     },
+    {
+      set_id: 0,
+      name: "jeff",
+      image_path: "public/images/jeff.png",
+      rarity_id: 0,
+    },
+    {
+      set_id: 0,
+      name: "ort",
+      image_path: "public/images/ort.png",
+      rarity_id: 1,
+    },
   ]);
 }
 
