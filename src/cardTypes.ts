@@ -26,15 +26,15 @@ async function main() {
   await db.insert(cardtypeTable).values([
     {
       set_id: 0,
-      name: "smiley",
-      image_path: "public/images/smiley.png",
+      name: "guppy",
+      image_path: "public/images/guppy.png",
       rarity_id: 0,
     },
     {
       set_id: 0,
-      name: "frowney",
-      image_path: "public/images/frowney.png",
-      rarity_id: 2,
+      name: "equi",
+      image_path: "public/images/equi.png",
+      rarity_id: 1,
     },
   ]);
 }
