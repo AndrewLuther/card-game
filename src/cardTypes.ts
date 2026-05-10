@@ -48,6 +48,18 @@ async function main() {
       image_path: "public/images/ort.png",
       rarity_id: 1,
     },
+    {
+      set_id: 0,
+      name: "anabelle",
+      image_path: "public/images/anabelle.png",
+      rarity_id: 2,
+    },
+    {
+      set_id: 0,
+      name: "globby",
+      image_path: "public/images/globby.png",
+      rarity_id: 2,
+    },
   ]);
 }
 
