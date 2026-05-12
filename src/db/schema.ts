@@ -1,4 +1,5 @@
 import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
 
 export const userTable = sqliteTable("user", {
   id: int().primaryKey({ autoIncrement: true }),
@@ -12,6 +13,13 @@ export const packTable = sqliteTable("pack", {
   user_id: int().notNull(),
   set_id: int().notNull(),
 });
+
+export const packRelations = relations(packTable, ({ one }) => ({
+  user: one(userTable, {
+    fields: [packTable.user_id],
+    references: [userTable.id],
+  }),
+}));
 
 export const cardTable = sqliteTable("card", {
   id: int().primaryKey({ autoIncrement: true }),

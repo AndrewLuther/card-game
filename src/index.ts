@@ -143,7 +143,7 @@ const commands: Command[] = [
         await db.delete(packTable).where(eq(packTable.id, packToOpen?.id!));
 
         // get the cardTypes that may exist within this pack
-        const cardTypes = await db
+        const cardTypes = await db // TODO get everything I need with a join here to also have rarity stuffs
           .select()
           .from(cardtypeTable)
           .where(eq(cardtypeTable.set_id, packToOpen?.set_id!));
