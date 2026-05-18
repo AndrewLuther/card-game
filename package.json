@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsx ./src/index.ts",
+    "start": "tsx ./src/index.tsx",
     "db_example": "tsx ./src/drizzle-example.ts",
     "cardtype_update": "tsx ./src/cardTypes.ts"
   },
@@ -23,9 +23,14 @@
     "@libsql/client": "^0.17.2",
     "discord.js": "^14.26.2",
     "dotenv": "^17.4.1",
-    "drizzle-orm": "^0.45.2"
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.19",
+    "html-react-parser": "^6.1.1",
+    "react": "^19.2.6",
+    "satori": "^0.26.0"
   },
   "devDependencies": {
+    "@types/react": "^19.2.14",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.21.0"
   }

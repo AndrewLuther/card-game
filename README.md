@@ -4,6 +4,13 @@ This is a work in progress personal project that I began developing recently to 
 
 The digital cards will use custom art which I plan to draw myself using a free open-source drawing program called [Krita](https://krita.org/en/).
 
+## Main Dependencies
+
+[discord.js](https://discord.js.org/) -> To interface with discord API
+[drizzle ORM](https://orm.drizzle.team/) -> For easy/streamlined SQLite database management
+[satori](https://github.com/choowx/satori-php) -> For converting card HTML/CSS to SVG images
+[hono](https://github.com/honojs/hono) -> Simple webserver
+
 ## DB Schema
 
 A rough idea of my plan for the database. Diagram created using [dbdiagram](https://dbdiagram.io/home).
@@ -16,17 +23,16 @@ Some rough plans for how users will interact with the bot.
 
 **open daily pack:**
 
-```/open {set_id}``` --> spends a pack voucher and gives the user x random cards from the specified set
+`/open {set_id}` --> spends a pack voucher and gives the user x random cards from the specified set
 
 **view collection:**
 
-```/collection``` --> shows the users which cards they have collected (a list of all the card names with numbers next to them to show how many you have, and options to view the art for each one)
-
+`/collection` --> shows the users which cards they have collected (a list of all the card names with numbers next to them to show how many you have, and options to view the art for each one)
 
 **make a trade:**
 
-```/trade-offer  {card_type_id} {user_id} {card_type_id}``` --> initiates a trade between 2 users
+`/trade-offer  {card_type_id} {user_id} {card_type_id}` --> initiates a trade between 2 users
 
-```/trade-view``` --> lists all trades that have been proposed to the user who initiates the command
+`/trade-view` --> lists all trades that have been proposed to the user who initiates the command
 
-```/trade-accept {trade_id}``` --> accepts the trade
+`/trade-accept {trade_id}` --> accepts the trade
