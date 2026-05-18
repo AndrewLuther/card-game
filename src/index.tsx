@@ -21,46 +21,41 @@ import { eq, and } from "drizzle-orm";
 
 import satori from "satori";
 import { Hono } from "hono";
+import { serve } from '@hono/node-server'
 
 import * as fs from 'node:fs';
 
-const app = new Hono()
 
-app.get('/', (c) => c.text('Hono!'))
+const honoApp = new Hono();
+honoApp.get("/image.svg", async (c) => {
+  const inter = fs.readFileSync("./src/Inter-Regular.ttf");
+  c.header("Content-Type", "image/svg+xml");
+  // Return the response body
+  const svg = await satori(
+    <div style={{ display: "flex", backgroundColor: "black", color: "white" }}>
+      <p>guppy</p>
+      <img src="https://i.imgur.com/2XqxH6B.png" />
+      <p>AL</p>
+      <p>1/5 *</p>
+    </div>,
+    {
+      width: 1024,
+      height: 1024,
+      fonts: [
+        {
+          name: "Inter",
+          data: inter,
+          weight: 400,
+          style: "normal",
+        },
+      ],
+    },
+  );
 
-export default app
+  return c.body(svg);
+});
 
-
-// const honoApp = new Hono();
-// honoApp.get("/image.svg", async (c) => {
-//   const inter = fs.readFileSync("./src/Inter-Regular.ttf");
-//   c.header("Content-Type", "image/svg+xml");
-//   // Return the response body
-//   const svg = await satori(
-//     <div style={{ display: "flex", backgroundColor: "black", color: "white" }}>
-//       <p>guppy</p>
-//       <img src="https://i.imgur.com/2XqxH6B.png" />
-//       <p>AL</p>
-//       <p>1/5 *</p>
-//     </div>,
-//     {
-//       width: 1024,
-//       height: 1024,
-//       fonts: [
-//         {
-//           name: "Inter",
-//           data: inter,
-//           weight: 400,
-//           style: "normal",
-//         },
-//       ],
-//     },
-//   );
-
-//   return c.body(svg);
-// });
-
-// export default honoApp
+export default honoApp
 
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN!;
@@ -329,5 +324,5 @@ client.once(Events.ClientReady, (readyClient) => {
 (async () => {
   await register();
   await client.login(TOKEN);
-
+  serve(honoApp)
 })();
