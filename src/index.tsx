@@ -26,21 +26,29 @@ import { serve } from '@hono/node-server'
 import * as fs from 'node:fs';
 
 
+
 const honoApp = new Hono();
 honoApp.get("/image.svg", async (c) => {
   const inter = fs.readFileSync("./src/Inter-Regular.ttf");
   c.header("Content-Type", "image/svg+xml");
   // Return the response body
+  // TODO how do I use local image?
   const svg = await satori(
-    <div style={{ display: "flex", backgroundColor: "black", color: "white" }}>
-      <p>guppy</p>
-      <img src="https://i.imgur.com/2XqxH6B.png" />
-      <p>AL</p>
-      <p>1/5 *</p>
+    <div style={{ display: "flex",  height: "100%", width:"100%", backgroundColor: "#0058AB", color: "white", justifyContent:"center", alignItems:"center",  flexDirection: "column", borderRadius:"40px", borderWidth:"10px", borderColor:"#001425"}}>
+      <div style={{display: "flex", width: "85%", alignItems:"stretch", justifyContent:"space-between", flexDirection:"row"}}>
+        <p style={{display:"flex"}}>guppy</p>
+      </div>
+      <div style={{display: "flex", width: "90%", backgroundColor: "#368DC5", justifyContent:"center", alignItems:"center", borderRadius:"20px", borderWidth:"5px", borderColor:"white"}}>
+        <img src="https://i.imgur.com/2XqxH6B.png" style={{width:"100%"}}/>
+      </div>
+      <div style={{display: "flex", width: "90%", alignItems:"stretch", justifyContent:"space-between", flexDirection:"row"}}>
+        <p style={{display:"flex"}}>AL</p>
+        <p style={{display:"flex"}}>1/5 *</p>
+      </div>
     </div>,
     {
-      width: 1024,
-      height: 1024,
+      width: 512,
+      height: 580,
       fonts: [
         {
           name: "Inter",
