@@ -22,6 +22,7 @@
   "dependencies": {
     "@hono/node-server": "^2.0.3",
     "@libsql/client": "^0.17.2",
+    "@resvg/resvg-js": "^2.6.2",
     "discord.js": "^14.26.2",
     "dotenv": "^17.4.1",
     "drizzle-orm": "^0.45.2",

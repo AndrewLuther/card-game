@@ -18,52 +18,57 @@ import {
   userTable,
 } from "./db/schema";
 import { eq, and } from "drizzle-orm";
-
-import satori from "satori";
-import { Hono } from "hono";
 import { serve } from '@hono/node-server'
+import { Resvg } from "@resvg/resvg-js";
 
-import * as fs from 'node:fs';
+import honoApp from "./card-svg";
+import { createCardSVG } from "./card-svg";
+
+export const baseUrl =
+  process.env.NODE_ENV === 'production'
+    ? 'https://myapp.com'
+    : 'http://localhost:3000'
 
 
 
-const honoApp = new Hono();
-honoApp.get("/image.svg", async (c) => {
-  const inter = fs.readFileSync("./src/Inter-Regular.ttf");
-  c.header("Content-Type", "image/svg+xml");
-  // Return the response body
-  // TODO how do I use local image?
-  const svg = await satori(
-    <div style={{ display: "flex",  height: "100%", width:"100%", backgroundColor: "#0058AB", color: "white", justifyContent:"center", alignItems:"center",  flexDirection: "column", borderRadius:"40px", borderWidth:"10px", borderColor:"#001425"}}>
-      <div style={{display: "flex", width: "85%", alignItems:"stretch", justifyContent:"space-between", flexDirection:"row"}}>
-        <p style={{display:"flex"}}>guppy</p>
-      </div>
-      <div style={{display: "flex", width: "90%", backgroundColor: "#368DC5", justifyContent:"center", alignItems:"center", borderRadius:"20px", borderWidth:"5px", borderColor:"white"}}>
-        <img src="https://i.imgur.com/2XqxH6B.png" style={{width:"100%"}}/>
-      </div>
-      <div style={{display: "flex", width: "90%", alignItems:"stretch", justifyContent:"space-between", flexDirection:"row"}}>
-        <p style={{display:"flex"}}>AL</p>
-        <p style={{display:"flex"}}>1/5 *</p>
-      </div>
-    </div>,
-    {
-      width: 512,
-      height: 580,
-      fonts: [
-        {
-          name: "Inter",
-          data: inter,
-          weight: 400,
-          style: "normal",
-        },
-      ],
-    },
-  );
+//const honoApp = new Hono();
+// honoApp.use('/images/*', serveStatic({root: './public'}))
 
-  return c.body(svg);
-});
+// honoApp.get("/image.svg", async (c) => {
+//   const inter = fs.readFileSync("./src/Inter-Regular.ttf");
+//   c.header("Content-Type", "image/svg+xml");
+//   // Return the response body
+//   const svg = await satori(
+//     <div style={{ display: "flex",  height: "100%", width:"100%", backgroundColor: "#0058AB", color: "white", justifyContent:"center", alignItems:"center",  flexDirection: "column", borderRadius:"40px", borderWidth:"10px", borderColor:"#001425", boxShadow:"inset 0px 0px 80px 8px #00245d"}}>
+//       <div style={{display: "flex", width: "85%", alignItems:"stretch", justifyContent:"space-between", flexDirection:"row"}}>
+//         <p style={{display:"flex"}}>guppy</p>
+//       </div>
+//       <div style={{display: "flex", width: "90%", backgroundColor: "#368DC5", justifyContent:"center", alignItems:"center", borderRadius:"20px", borderWidth:"5px", borderColor:"white", boxShadow:"inset 0px 0px 80px 8px #00353a"}}>
+//         <img src={`${baseUrl}/images/guppy.png`} style={{width:"100%"}}/>
+//       </div>
+//       <div style={{display: "flex", width: "90%", alignItems:"stretch", justifyContent:"space-between", flexDirection:"row"}}>
+//         <p style={{display:"flex"}}>AL</p>
+//         <p style={{display:"flex"}}>1/5 *</p>
+//       </div>
+//     </div>,
+//     {
+//       width: 512,
+//       height: 580,
+//       fonts: [
+//         {
+//           name: "Inter",
+//           data: inter,
+//           weight: 400,
+//           style: "normal",
+//         },
+//       ],
+//     },
+//   );
 
-export default honoApp
+//   return c.body(svg);
+// });
+
+// export default honoApp
 
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN!;
@@ -213,7 +218,7 @@ const commands: Command[] = [
 
         type Card = { user_id: number; cardtype_id: number };
         const cards: Array<Card> = [];
-        const cardImagePaths: Array<string> = [];
+        const cardImagePaths: Array<object> = [];
 
         // create the cards
         for (let i = 0; i < cardsPerPack; i++) {
@@ -250,7 +255,17 @@ const commands: Command[] = [
           );
           const cardType = cardTypesWithRarity[cardtypeIndex];
           cards.push({ user_id: user.id, cardtype_id: cardType?.id! });
-          cardImagePaths.push(cardType?.image_path!);
+          //cardImagePaths.push(cardType?.image_path!);
+          //cardImagePaths.push(`${baseUrl}/image.svg`);
+
+          const svg = await createCardSVG("guppy", "images/guppy.png", "AL", 1, "*")
+          const resvg = new Resvg(svg)
+          const pngData = resvg.render()
+          const pngBuffer = pngData.asPng()
+          cardImagePaths.push({
+            attachment: pngBuffer
+          })
+          
         }
 
         await db.insert(cardTable).values(cards);
