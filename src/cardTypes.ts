@@ -27,37 +27,37 @@ async function main() {
     {
       set_id: 0,
       name: "guppy",
-      image_path: "public/images/guppy.png",
+      image_path: "images/guppy.png",
       rarity_id: 0,
     },
     {
       set_id: 0,
       name: "equi",
-      image_path: "public/images/equi.png",
+      image_path: "images/equi.png",
       rarity_id: 1,
     },
     {
       set_id: 0,
       name: "jeff",
-      image_path: "public/images/jeff.png",
+      image_path: "images/jeff.png",
       rarity_id: 0,
     },
     {
       set_id: 0,
       name: "ort",
-      image_path: "public/images/ort.png",
+      image_path: "images/ort.png",
       rarity_id: 1,
     },
     {
       set_id: 0,
       name: "anabelle",
-      image_path: "public/images/anabelle.png",
+      image_path: "images/anabelle.png",
       rarity_id: 2,
     },
     {
       set_id: 0,
       name: "globby",
-      image_path: "public/images/globby.png",
+      image_path: "images/globby.png",
       rarity_id: 2,
     },
   ]);

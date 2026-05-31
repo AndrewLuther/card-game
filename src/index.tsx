@@ -18,58 +18,15 @@ import {
   userTable,
 } from "./db/schema";
 import { eq, and } from "drizzle-orm";
-import { serve } from '@hono/node-server'
-import { Resvg } from "@resvg/resvg-js";
+import { serve } from "@hono/node-server";
 
 import honoApp from "./card-svg";
-import { createCardSVG } from "./card-svg";
+import { createCardPNG } from "./card-svg";
 
 export const baseUrl =
-  process.env.NODE_ENV === 'production'
-    ? 'https://myapp.com'
-    : 'http://localhost:3000'
-
-
-
-//const honoApp = new Hono();
-// honoApp.use('/images/*', serveStatic({root: './public'}))
-
-// honoApp.get("/image.svg", async (c) => {
-//   const inter = fs.readFileSync("./src/Inter-Regular.ttf");
-//   c.header("Content-Type", "image/svg+xml");
-//   // Return the response body
-//   const svg = await satori(
-//     <div style={{ display: "flex",  height: "100%", width:"100%", backgroundColor: "#0058AB", color: "white", justifyContent:"center", alignItems:"center",  flexDirection: "column", borderRadius:"40px", borderWidth:"10px", borderColor:"#001425", boxShadow:"inset 0px 0px 80px 8px #00245d"}}>
-//       <div style={{display: "flex", width: "85%", alignItems:"stretch", justifyContent:"space-between", flexDirection:"row"}}>
-//         <p style={{display:"flex"}}>guppy</p>
-//       </div>
-//       <div style={{display: "flex", width: "90%", backgroundColor: "#368DC5", justifyContent:"center", alignItems:"center", borderRadius:"20px", borderWidth:"5px", borderColor:"white", boxShadow:"inset 0px 0px 80px 8px #00353a"}}>
-//         <img src={`${baseUrl}/images/guppy.png`} style={{width:"100%"}}/>
-//       </div>
-//       <div style={{display: "flex", width: "90%", alignItems:"stretch", justifyContent:"space-between", flexDirection:"row"}}>
-//         <p style={{display:"flex"}}>AL</p>
-//         <p style={{display:"flex"}}>1/5 *</p>
-//       </div>
-//     </div>,
-//     {
-//       width: 512,
-//       height: 580,
-//       fonts: [
-//         {
-//           name: "Inter",
-//           data: inter,
-//           weight: 400,
-//           style: "normal",
-//         },
-//       ],
-//     },
-//   );
-
-//   return c.body(svg);
-// });
-
-// export default honoApp
-
+  process.env.NODE_ENV === "production"
+    ? "https://myapp.com"
+    : "http://localhost:3000";
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN!;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
@@ -123,6 +80,125 @@ async function getPacks(interaction: ChatInputCommandInteraction) {
   return packs;
 }
 
+async function voucherReceiveCommand(interaction: ChatInputCommandInteraction) {
+  await createNewUser(interaction);
+  let voucher = await getVoucherCount(interaction);
+  if (!voucher) voucher = 0;
+
+  const userResult = await db
+    .update(userTable)
+    .set({ packVouchers: voucher + 1 })
+    .where(eq(userTable.discordSnowflake, interaction.user.id!))
+    .returning();
+  return userResult[0]!;
+}
+
+async function buyPackCommand(interaction: ChatInputCommandInteraction) {
+  let voucher = await getVoucherCount(interaction);
+  const userResult = await db
+    .update(userTable)
+    .set({ packVouchers: voucher - 1 })
+    .where(eq(userTable.discordSnowflake, interaction.user.id!))
+    .returning();
+  const user = userResult[0]!;
+
+  await db.insert(packTable).values({
+    user_id: user.id,
+    set_id: 0,
+  });
+
+  const packs = await getPacks(interaction);
+  return packs;
+}
+
+async function openPackCommand(interaction: ChatInputCommandInteraction) {
+  await createNewUser(interaction);
+  const packs = await getPacks(interaction);
+  if (packs.length <= 0) {
+    console.log("ERROR: No pack to open");
+    return;
+  } else {
+    const user = await getUser(interaction);
+
+    // for now just open the first pack
+    const packToOpen = packs[0];
+
+    // define this somewhere else?
+    const cardsPerPack = 4;
+
+    // remove pack from db
+    await db.delete(packTable).where(eq(packTable.id, packToOpen?.id!));
+
+    // get the cardTypes that may exist within this pack
+    const cardTypes = await db // TODO get everything I need with a join here to also have rarity stuffs
+      .select()
+      .from(cardtypeTable)
+      .where(eq(cardtypeTable.set_id, packToOpen?.set_id!));
+
+    type Rarity = { id: number; value: number };
+    const cardrarities: Array<Rarity> = [];
+
+    for (let i = 0; i < cardTypes.length; i++) {
+      const cardType = cardTypes[i];
+      const cardTypeRarities = await db
+        .select()
+        .from(cardrarityTable)
+        .where(eq(cardrarityTable.id, cardType?.rarity_id!));
+      const cardTypeRarity = cardTypeRarities[0];
+
+      cardrarities.push(cardTypeRarity!);
+    }
+
+    cardrarities.sort((a, b) => b.value - a.value);
+
+    type Card = { user_id: number; cardtype_id: number };
+    const cards: Array<Card> = [];
+    const cardImagePaths = [];
+
+    // create the cards
+    for (let i = 0; i < cardsPerPack; i++) {
+      // determine which cardrarity is randomly selected
+      let rarity = cardrarities[0];
+      const random = Math.random() * 100;
+      for (let j = 0; j < cardrarities.length; j++) {
+        if (random < cardrarities[j]!.value) {
+          rarity = cardrarities[j];
+        }
+      }
+
+      // get all card with this rarity from db
+      const cardTypesWithRarity = await db
+        .select()
+        .from(cardtypeTable)
+        .where(
+          and(
+            eq(cardtypeTable.rarity_id, rarity?.id!),
+            eq(cardtypeTable.set_id, packToOpen?.set_id!),
+          ),
+        );
+
+      const cardtypeIndex = Math.floor(
+        Math.random() * cardTypesWithRarity.length,
+      );
+      const cardType = cardTypesWithRarity[cardtypeIndex];
+      cards.push({ user_id: user.id, cardtype_id: cardType?.id! });
+
+      const pngBuffer = await createCardPNG(
+        `${cardType?.name!}`,
+        `${cardType?.image_path}`,
+        "AL",
+        1,
+        "*",
+      );
+      cardImagePaths.push(pngBuffer);
+    }
+
+    await db.insert(cardTable).values(cards);
+
+    return cardImagePaths;
+  }
+}
+
 type Command = {
   data: SlashCommandBuilder;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
@@ -150,21 +226,8 @@ const commands: Command[] = [
           `You don't have any pack vouchers! If you haven't already, use voucher-receive to receive your daily vouchers.`,
         );
       } else {
-        // should these multiple transactions happen with one command? Don't want things getting out of sync
-        const userResult = await db
-          .update(userTable)
-          .set({ packVouchers: voucher - 1 })
-          .where(eq(userTable.discordSnowflake, interaction.user.id!))
-          .returning();
-        const user = userResult[0]!;
-
-        await db.insert(packTable).values({
-          user_id: user.id,
-          set_id: 0,
-        });
-
-        const packs = await getPacks(interaction);
-
+        const packs = await buyPackCommand(interaction);
+        const user = await getUser(interaction);
         await interaction.reply(
           `You now have ${packs.length} unopened packs! (${user.packVouchers} pack vouchers remaining)`,
         );
@@ -176,102 +239,14 @@ const commands: Command[] = [
       .setName("open-pack")
       .setDescription("Open one of your packs."),
     async execute(interaction) {
-      await createNewUser(interaction);
       const packs = await getPacks(interaction);
       if (packs.length <= 0) {
-        await interaction.reply(
-          `You don't own any packs! Use /buy-pack to purchase one.`,
-        );
+        console.log("ERROR: No pack to open");
       } else {
-        const user = await getUser(interaction);
-
-        // for now just open the first pack
-        const packToOpen = packs[0];
-
-        // define this somewhere else?
-        const cardsPerPack = 5;
-
-        // remove pack from db
-        await db.delete(packTable).where(eq(packTable.id, packToOpen?.id!));
-
-        // get the cardTypes that may exist within this pack
-        const cardTypes = await db // TODO get everything I need with a join here to also have rarity stuffs
-          .select()
-          .from(cardtypeTable)
-          .where(eq(cardtypeTable.set_id, packToOpen?.set_id!));
-
-        type Rarity = { id: number; value: number };
-        const cardrarities: Array<Rarity> = [];
-
-        for (let i = 0; i < cardTypes.length; i++) {
-          const cardType = cardTypes[i];
-          const cardTypeRarities = await db
-            .select()
-            .from(cardrarityTable)
-            .where(eq(cardrarityTable.id, cardType?.rarity_id!));
-          const cardTypeRarity = cardTypeRarities[0];
-
-          cardrarities.push(cardTypeRarity!);
-        }
-
-        cardrarities.sort((a, b) => b.value - a.value);
-
-        type Card = { user_id: number; cardtype_id: number };
-        const cards: Array<Card> = [];
-        const cardImagePaths: Array<object> = [];
-
-        // create the cards
-        for (let i = 0; i < cardsPerPack; i++) {
-          // determine which cardrarity is randomly selected
-          let rarity = cardrarities[0];
-          const random = Math.random() * 100;
-          console.log(random);
-          for (let j = 0; j < cardrarities.length; j++) {
-            if (random < cardrarities[j]!.value) {
-              console.log(
-                "The random value is " +
-                  random +
-                  " and the cardrarities value is " +
-                  cardrarities[j]!.value,
-              );
-              rarity = cardrarities[j];
-            }
-          }
-          console.log(rarity?.id);
-
-          // get all card with this rarity from db
-          const cardTypesWithRarity = await db
-            .select()
-            .from(cardtypeTable)
-            .where(
-              and(
-                eq(cardtypeTable.rarity_id, rarity?.id!),
-                eq(cardtypeTable.set_id, packToOpen?.set_id!),
-              ),
-            );
-
-          const cardtypeIndex = Math.floor(
-            Math.random() * cardTypesWithRarity.length,
-          );
-          const cardType = cardTypesWithRarity[cardtypeIndex];
-          cards.push({ user_id: user.id, cardtype_id: cardType?.id! });
-          //cardImagePaths.push(cardType?.image_path!);
-          //cardImagePaths.push(`${baseUrl}/image.svg`);
-
-          const svg = await createCardSVG("guppy", "images/guppy.png", "AL", 1, "*")
-          const resvg = new Resvg(svg)
-          const pngData = resvg.render()
-          const pngBuffer = pngData.asPng()
-          cardImagePaths.push({
-            attachment: pngBuffer
-          })
-          
-        }
-
-        await db.insert(cardTable).values(cards);
-
-        // display the cards that were received
-        await interaction.reply({
+        await interaction.deferReply();
+        const cardImagePaths = await openPackCommand(interaction)
+       // display the cards that were received
+        await interaction.editReply({
           content: "Here are your cards!",
           files: cardImagePaths,
         });
@@ -293,20 +268,28 @@ const commands: Command[] = [
       .setName("voucher-receive")
       .setDescription("Receive your daily pack vouchers."),
     async execute(interaction) {
-      await createNewUser(interaction);
-      let voucher = await getVoucherCount(interaction);
-      if (!voucher) voucher = 0;
-
-      const userResult = await db
-        .update(userTable)
-        .set({ packVouchers: voucher + 1 })
-        .where(eq(userTable.discordSnowflake, interaction.user.id!))
-        .returning();
-      const user = userResult[0]!;
+      const user = await voucherReceiveCommand(interaction);
 
       await interaction.reply(
         `You now have ${user.packVouchers} pack vouchers!`,
       );
+    },
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("test-pack-open")
+      .setDescription("Just do everything needed to open a pack."),
+    async execute(interaction) {
+      await voucherReceiveCommand(interaction);
+      await buyPackCommand(interaction);
+
+      await interaction.deferReply();
+      const cardImagePaths = await openPackCommand(interaction)
+      // display the cards that were received
+      await interaction.editReply({
+        content: "Here are your cards!",
+        files: cardImagePaths,
+      });
     },
   },
 ];
@@ -342,10 +325,8 @@ client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
-
-
 (async () => {
   await register();
   await client.login(TOKEN);
-  serve(honoApp)
+  serve(honoApp);
 })();

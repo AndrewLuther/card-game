@@ -5,7 +5,7 @@ export const userTable = sqliteTable("user", {
   id: int().primaryKey({ autoIncrement: true }),
   name: text().notNull(),
   discordSnowflake: text().notNull().unique(),
-  packVouchers: int(),
+  packVouchers: int().notNull(),
 });
 
 export const packTable = sqliteTable("pack", {
