@@ -22,6 +22,8 @@ import { serve } from "@hono/node-server";
 
 import honoApp from "./card-svg";
 import { createCardPNG } from "./card-svg";
+import puppeteer, {Browser, Page} from "puppeteer";
+
 
 export const baseUrl =
   process.env.NODE_ENV === "production"
@@ -33,6 +35,8 @@ const CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 const GUILD_ID = process.env.DISCORD_GUILD_ID; // optional
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+
+let browser:Browser;
 
 // creates a new user in the db if the user isn't added yet
 async function createNewUser(interaction: ChatInputCommandInteraction) {
@@ -153,7 +157,7 @@ async function openPackCommand(interaction: ChatInputCommandInteraction) {
 
     type Card = { user_id: number; cardtype_id: number };
     const cards: Array<Card> = [];
-    const cardImagePaths = [];
+    const cardImagePaths: Array<Buffer> = [];
 
     // create the cards
     for (let i = 0; i < cardsPerPack; i++) {
@@ -183,14 +187,23 @@ async function openPackCommand(interaction: ChatInputCommandInteraction) {
       const cardType = cardTypesWithRarity[cardtypeIndex];
       cards.push({ user_id: user.id, cardtype_id: cardType?.id! });
 
-      const pngBuffer = await createCardPNG(
-        `${cardType?.name!}`,
-        `${cardType?.image_path}`,
-        "AL",
-        1,
-        "*",
-      );
-      cardImagePaths.push(pngBuffer);
+      const page:Page = await browser.newPage();
+      try {
+          const pngBuffer = await createCardPNG(
+          page,
+          `${cardType?.name!}`,
+          `${cardType?.image_path}`,
+          "AL",
+          1,
+          "*",
+        );
+
+        cardImagePaths.push(pngBuffer);
+
+      } finally {
+        await page.close();
+      }
+      
     }
 
     await db.insert(cardTable).values(cards);
@@ -329,4 +342,13 @@ client.once(Events.ClientReady, (readyClient) => {
   await register();
   await client.login(TOKEN);
   serve(honoApp);
+  browser = await puppeteer.launch({
+      headless: true
+  });
 })();
+
+
+process.on("SIGTERM", async () => {
+    await browser.close();
+    process.exit(0);
+});
