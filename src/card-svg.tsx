@@ -16,8 +16,8 @@ export async function createCardPNG(page:Page, cardName:string, imagePath:string
   const html = `
   <div style="
     display:flex;
-    height:580px;
-    width:512px;
+    height:auto;
+    width:auto;
     background-color:#0058AB;
     color:white;
     justify-content:center;
@@ -72,7 +72,7 @@ export async function createCardPNG(page:Page, cardName:string, imagePath:string
     
   await page.setContent(html);
 
-  const pngbuffer = await page.screenshot();
+  const pngbuffer = await page.screenshot({omitBackground:true});
 
   return Buffer.from(pngbuffer)
 
