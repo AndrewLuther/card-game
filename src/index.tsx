@@ -10,28 +10,19 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import {
-  db,
+  getUserCount,
   createNewUser,
   getVoucherCount,
-  getUser,
-  getPacks,
   voucherReceiveCommand,
   buyPackCommand,
   openPackCommand,
 } from "./db/db";
-import {
-  cardrarityTable,
-  cardTable,
-  cardtypeTable,
-  packTable,
-  userTable,
-} from "./db/schema";
-import { eq, and } from "drizzle-orm";
+
 import { serve } from "@hono/node-server";
 
 import honoApp from "./card-svg";
 
-import puppeteer, { Browser, Page } from "puppeteer";
+import puppeteer, { Browser } from "puppeteer";
 
 export const baseUrl =
   process.env.NODE_ENV === "production"
@@ -55,53 +46,10 @@ const commands: Command[] = [
   {
     data: new SlashCommandBuilder()
       .setName("users")
-      .setDescription("Get Number of Users from the db."),
+      .setDescription("Get number of users from the db."),
     async execute(interaction) {
-      const count = await db.$count(userTable);
+      const count = await getUserCount();
       await interaction.reply(`We have ${count} users in the db.`);
-    },
-  },
-  {
-    data: new SlashCommandBuilder()
-      .setName("buy-pack")
-      .setDescription("Buy a pack using a pack voucher."),
-    async execute(interaction) {
-      await createNewUser(interaction.user.username!, interaction.user.id!);
-      const voucher = await getVoucherCount(interaction.user.id!);
-      if (voucher == 0) {
-        interaction.reply(
-          `You don't have any pack vouchers! If you haven't already, use voucher-receive to receive your daily vouchers.`,
-        );
-      } else {
-        const packs = await buyPackCommand(interaction.user.id!);
-        const user = await getUser(interaction.user.id!);
-        await interaction.reply(
-          `You now have ${packs.length} unopened packs! (${user.packVouchers} pack vouchers remaining)`,
-        );
-      }
-    },
-  },
-  {
-    data: new SlashCommandBuilder()
-      .setName("open-pack")
-      .setDescription("Open one of your packs."),
-    async execute(interaction) {
-      const packs = await getPacks(interaction.user.id!);
-      if (packs.length <= 0) {
-        console.log("ERROR: No pack to open");
-      } else {
-        await interaction.deferReply();
-        const cardImagePaths = await openPackCommand(
-          interaction.user.username!,
-          interaction.user.id!,
-          browser,
-        );
-        // display the cards that were received
-        await interaction.editReply({
-          content: "Here are your cards!",
-          files: cardImagePaths,
-        });
-      }
     },
   },
   {
@@ -109,6 +57,7 @@ const commands: Command[] = [
       .setName("voucher-number")
       .setDescription("See how many vouchers you have."),
     async execute(interaction) {
+      // creates a new user in the database if this user hasn't interacted yet
       await createNewUser(interaction.user.username!, interaction.user.id!);
       const voucher = await getVoucherCount(interaction.user.id!);
       await interaction.reply(`You have ${voucher} pack vouchers!`);
@@ -131,6 +80,55 @@ const commands: Command[] = [
   },
   {
     data: new SlashCommandBuilder()
+      .setName("buy-pack")
+      .setDescription("Buy a pack using a pack voucher."),
+    async execute(interaction) {
+      const buyPackResponse = await buyPackCommand(
+        interaction.user.username,
+        interaction.user.id!,
+      );
+
+      // if nothing was returned, its because the user has no pack vouchers
+      if (!buyPackResponse) {
+        interaction.reply(
+          `You don't have any pack vouchers! If you haven't already, use /voucher-receive to receive your daily vouchers.`,
+        );
+      } else {
+        await interaction.reply(
+          `You now have ${buyPackResponse.packs.length} unopened packs! (${buyPackResponse.user.packVouchers} pack vouchers remaining)`,
+        );
+      }
+    },
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("open-pack")
+      .setDescription("Open one of your packs."),
+    async execute(interaction) {
+      // This can take a while because of image stuff, give bot time to process
+      await interaction.deferReply();
+      const openPackResponse = await openPackCommand(
+        interaction.user.username!,
+        interaction.user.id!,
+        browser,
+      );
+
+      // if response is null the user doesn't have any packs to open
+      if (!openPackResponse) {
+        interaction.editReply(
+          `You don't have any packs! Use /buy-pack to purchase a pack of cards to open.`,
+        );
+      } else {
+        await interaction.editReply({
+          content: "Fished up four new cards!",
+          files: openPackResponse.cardImagePaths,
+        });
+      }
+    },
+  },
+
+  {
+    data: new SlashCommandBuilder()
       .setName("test-pack-open")
       .setDescription("Just do everything needed to open a pack."),
     async execute(interaction) {
@@ -138,18 +136,16 @@ const commands: Command[] = [
         interaction.user.username!,
         interaction.user.id!,
       );
-      await buyPackCommand(interaction.user.id!);
-
+      await buyPackCommand(interaction.user.username, interaction.user.id!);
       await interaction.deferReply();
-      const cardImagePaths = await openPackCommand(
+      const openPackResponse = await openPackCommand(
         interaction.user.username!,
         interaction.user.id!,
         browser,
       );
-      // display the cards that were received
       await interaction.editReply({
-        content: "Here are your cards!",
-        files: cardImagePaths,
+        content: "Fished up four new cards!",
+        files: openPackResponse!.cardImagePaths,
       });
     },
   },

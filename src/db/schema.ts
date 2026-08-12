@@ -33,6 +33,7 @@ export const cardtypeTable = sqliteTable("cardtype", {
   name: text().notNull(),
   image_path: text().notNull(),
   rarity_id: int().notNull(),
+  illustrator: text().notNull(),
 });
 
 export const setTable = sqliteTable("set", {

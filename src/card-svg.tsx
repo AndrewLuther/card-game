@@ -1,18 +1,26 @@
 import satori from "satori";
-import * as fs from 'node:fs';
+import * as fs from "node:fs";
 import { baseUrl } from ".";
 import { Hono } from "hono";
-import { serveStatic } from '@hono/node-server/serve-static'
-import { serve } from '@hono/node-server'
+import { serveStatic } from "@hono/node-server/serve-static";
+import { serve } from "@hono/node-server";
 import { Resvg } from "@resvg/resvg-js";
 
 import { Page } from "puppeteer";
 
 const honoApp = new Hono();
-honoApp.use('/images/*', serveStatic({root: './public'}))
-export default honoApp
+honoApp.use("/images/*", serveStatic({ root: "./public" }));
+export default honoApp;
 
-export async function createCardPNG(page:Page, cardName:string, imagePath:string, author:string, cardIndex:number, rarityString:string ): Promise<Buffer> {
+export async function createCardPNG(
+  page: Page,
+  cardName: string,
+  imagePath: string,
+  author: string,
+  cardIndex: number,
+  rarityString: string,
+  cardsInSet: number,
+): Promise<Buffer> {
   const html = `
   <div style="
     display:flex;
@@ -60,21 +68,19 @@ export async function createCardPNG(page:Page, cardName:string, imagePath:string
       flex-direction:row;
     ">
       <p style="display:flex;">${author}</p>
-      <p style="display:flex;">${cardIndex}/5 ${rarityString}</p>
+      <p style="display:flex;">${cardIndex}/${cardsInSet} ${rarityString}</p>
     </div>
   </div>
-  `;    
+  `;
 
   await page.setViewport({
     width: 512,
-    height: 580
+    height: 580,
   });
-    
+
   await page.setContent(html);
 
-  const pngbuffer = await page.screenshot({omitBackground:true});
+  const pngbuffer = await page.screenshot({ omitBackground: true });
 
-  return Buffer.from(pngbuffer)
-
-
+  return Buffer.from(pngbuffer);
 }

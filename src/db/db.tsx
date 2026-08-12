@@ -8,16 +8,27 @@ import {
   userTable,
 } from "./schema";
 
+import type { User, Pack } from "../types";
+
 import { eq, and } from "drizzle-orm";
 
-import puppeteer, { Browser, Page } from "puppeteer";
+import { Browser, Page } from "puppeteer";
 
 import { createCardPNG } from "../card-svg";
 
 export const db = drizzle(process.env.DB_FILE_NAME!);
 
+export async function getUserCount() {
+  return await db.$count(userTable);
+}
+
+// HELPER FUNCTIONS // -------------------------------------------------------------
+
 // creates a new user in the db if the user isn't added yet
-export async function createNewUser(username: string, userId: string) {
+export async function createNewUser(
+  username: string,
+  userId: string,
+): Promise<void> {
   const users = await db
     .select()
     .from(userTable)
@@ -33,7 +44,7 @@ export async function createNewUser(username: string, userId: string) {
   }
 }
 
-export async function getVoucherCount(userId: string) {
+export async function getVoucherCount(userId: string): Promise<number> {
   const vouchers = await db
     .select({ vouchers: userTable.packVouchers })
     .from(userTable)
@@ -44,7 +55,7 @@ export async function getVoucherCount(userId: string) {
   return voucher;
 }
 
-export async function getUser(userId: string) {
+export async function getUser(userId: string): Promise<User> {
   const userResult = await db
     .select()
     .from(userTable)
@@ -53,7 +64,7 @@ export async function getUser(userId: string) {
   return user;
 }
 
-export async function getPacks(userId: string) {
+export async function getPacks(userId: string): Promise<Pack[]> {
   const user = await getUser(userId);
   const packs = await db
     .select()
@@ -61,6 +72,8 @@ export async function getPacks(userId: string) {
     .where(eq(packTable.user_id, user.id));
   return packs;
 }
+
+// MAIN API FUNCTIONS // -------------------------------------------------------------
 
 export async function voucherReceiveCommand(username: string, userId: string) {
   await createNewUser(username, userId);
@@ -75,38 +88,48 @@ export async function voucherReceiveCommand(username: string, userId: string) {
   return userResult[0]!;
 }
 
-export async function buyPackCommand(userId: string) {
+export async function buyPackCommand(
+  username: string,
+  userId: string,
+): Promise<{ packs: Pack[]; user: User } | null> {
+  await createNewUser(username, userId);
   let voucher = await getVoucherCount(userId);
+
+  if (voucher == 0) {
+    return null;
+  }
+
+  // decrease the number of vouchers the user has by 1
   const userResult = await db
     .update(userTable)
     .set({ packVouchers: voucher - 1 })
     .where(eq(userTable.discordSnowflake, userId))
     .returning();
-  const user = userResult[0]!;
+  const user = userResult[0]!; // will always return one because userId is unique
 
+  // add a pack to packTable associated with this user
   await db.insert(packTable).values({
     user_id: user.id,
-    set_id: 0,
+    set_id: 0, // currently only support one set
   });
 
   const packs = await getPacks(userId);
-  return packs;
+  return { packs, user };
 }
 
 export async function openPackCommand(
   username: string,
   userId: string,
   browser: Browser,
-) {
+): Promise<{ cardImagePaths: Buffer[] } | null> {
   await createNewUser(username, userId);
   const packs = await getPacks(userId);
   if (packs.length <= 0) {
-    console.log("ERROR: No pack to open");
-    return;
+    return null;
   } else {
     const user = await getUser(userId);
 
-    // for now just open the first pack
+    // for now just open the first pack (eventually we will want to get a way for the user to select a pack)
     const packToOpen = packs[0];
 
     // define this somewhere else?
@@ -171,13 +194,15 @@ export async function openPackCommand(
 
       const page: Page = await browser.newPage();
       try {
+        const rarityString = "*".repeat(cardType?.rarity_id! + 1);
         const pngBuffer = await createCardPNG(
           page,
           `${cardType?.name!}`,
           `${cardType?.image_path}`,
-          "AL",
-          1,
-          "*",
+          `${cardType?.illustrator}`,
+          cardType?.id!,
+          `${rarityString}`,
+          cardTypes.length,
         );
 
         cardImagePaths.push(pngBuffer);
@@ -188,6 +213,6 @@ export async function openPackCommand(
 
     await db.insert(cardTable).values(cards);
 
-    return cardImagePaths;
+    return { cardImagePaths };
   }
 }
