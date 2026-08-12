@@ -14,7 +14,7 @@ import { eq, and } from "drizzle-orm";
 
 import { Browser, Page } from "puppeteer";
 
-import { createCardPNG } from "../card-svg";
+import { createCardPNG } from "../card";
 
 export const db = drizzle(process.env.DB_FILE_NAME!);
 
@@ -28,7 +28,7 @@ export async function getUserCount() {
 export async function createNewUser(
   username: string,
   userId: string,
-): Promise<void> {
+): Promise<User> {
   const users = await db
     .select()
     .from(userTable)
@@ -36,11 +36,19 @@ export async function createNewUser(
 
   if (users.length == 0) {
     // add the user to the db
-    await db.insert(userTable).values({
-      name: username,
-      discordSnowflake: userId,
-      packVouchers: 0,
-    });
+    const userResult = await db
+      .insert(userTable)
+      .values({
+        name: username,
+        discordSnowflake: userId,
+        packVouchers: 0,
+        lastFreeVoucher: 0,
+      })
+      .returning();
+
+    return userResult[0]!;
+  } else {
+    return users[0]!;
   }
 }
 
@@ -75,17 +83,27 @@ export async function getPacks(userId: string): Promise<Pack[]> {
 
 // MAIN API FUNCTIONS // -------------------------------------------------------------
 
-export async function voucherReceiveCommand(username: string, userId: string) {
-  await createNewUser(username, userId);
+export async function voucherReceiveCommand(
+  username: string,
+  userId: string,
+): Promise<User | null> {
+  const user = await createNewUser(username, userId);
   let voucher = await getVoucherCount(userId);
   if (!voucher) voucher = 0;
 
-  const userResult = await db
-    .update(userTable)
-    .set({ packVouchers: voucher + 1 })
-    .where(eq(userTable.discordSnowflake, userId))
-    .returning();
-  return userResult[0]!;
+  // const waitTime = 86400000
+  const waitTime = 1;
+
+  if (Date.now() - user.lastFreeVoucher > waitTime) {
+    const userResult = await db
+      .update(userTable)
+      .set({ packVouchers: voucher + 1, lastFreeVoucher: Date.now() })
+      .where(eq(userTable.discordSnowflake, userId))
+      .returning();
+    return userResult[0]!;
+  } else {
+    return null;
+  }
 }
 
 export async function buyPackCommand(
@@ -194,14 +212,13 @@ export async function openPackCommand(
 
       const page: Page = await browser.newPage();
       try {
-        const rarityString = "*".repeat(cardType?.rarity_id! + 1);
         const pngBuffer = await createCardPNG(
           page,
           `${cardType?.name!}`,
           `${cardType?.image_path}`,
           `${cardType?.illustrator}`,
           cardType?.id!,
-          `${rarityString}`,
+          cardType?.rarity_id!,
           cardTypes.length,
         );
 

@@ -12,21 +12,58 @@ const honoApp = new Hono();
 honoApp.use("/images/*", serveStatic({ root: "./public" }));
 export default honoApp;
 
+type RarityColors = {
+  color1: string;
+  color2: string;
+  color3: string;
+};
+
+const rarityColors = new Map<number, RarityColors>([
+  [
+    0,
+    {
+      color1: "#0058AB",
+      color2: "#368DC5",
+      color3: "#00245d",
+    },
+  ],
+  [
+    1,
+    {
+      color1: "#018310",
+      color2: "#6bc575",
+      color3: "#003106",
+    },
+  ],
+  [
+    2,
+    {
+      color1: "#c15e0e",
+      color2: "#d78746",
+      color3: "#522a0a",
+    },
+  ],
+]);
+
 export async function createCardPNG(
   page: Page,
   cardName: string,
   imagePath: string,
   author: string,
   cardIndex: number,
-  rarityString: string,
+  rarityId: number,
   cardsInSet: number,
 ): Promise<Buffer> {
+  const rarityString = "*".repeat(rarityId + 1);
+
+  const colors = rarityColors.get(rarityId)!;
+
   const html = `
   <div style="
     display:flex;
     height:auto;
     width:auto;
-    background-color:#0058AB;
+    background-color:${colors.color1};
     color:white;
     justify-content:center;
     align-items:center;
@@ -34,8 +71,8 @@ export async function createCardPNG(
     border-radius:40px;
     border-width:10px;
     border-style:solid;
-    border-color:#001425;
-    box-shadow:inset 0px 0px 80px 8px #00245d;
+    border-color: #c5c6c7;
+    box-shadow:inset 0px 0px 80px 8px ${colors.color3};
   ">
     <div style="
       display:flex;
@@ -50,7 +87,7 @@ export async function createCardPNG(
     <div style="
       display:flex;
       width:90%;
-      background-color:#368DC5;
+      background-color:${colors.color2};
       justify-content:center;
       align-items:center;
       border-radius:20px;

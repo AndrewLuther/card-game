@@ -20,7 +20,7 @@ import {
 
 import { serve } from "@hono/node-server";
 
-import honoApp from "./card-svg";
+import honoApp from "./card";
 
 import puppeteer, { Browser } from "puppeteer";
 
@@ -73,9 +73,15 @@ const commands: Command[] = [
         interaction.user.id!,
       );
 
-      await interaction.reply(
-        `You now have ${user.packVouchers} pack vouchers!`,
-      );
+      if (!user) {
+        await interaction.reply(
+          `You have already received your free voucher for the day! Check back tomorrow.`,
+        );
+      } else {
+        await interaction.reply(
+          `You now have ${user.packVouchers} pack vouchers!`,
+        );
+      }
     },
   },
   {

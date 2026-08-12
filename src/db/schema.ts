@@ -6,6 +6,7 @@ export const userTable = sqliteTable("user", {
   name: text().notNull(),
   discordSnowflake: text().notNull().unique(),
   packVouchers: int().notNull(),
+  lastFreeVoucher: int().notNull(),
 });
 
 export const packTable = sqliteTable("pack", {
