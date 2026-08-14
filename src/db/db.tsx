@@ -24,6 +24,16 @@ export async function getUserCount() {
 
 // HELPER FUNCTIONS // -------------------------------------------------------------
 
+export async function getCards(username: string, userId: string) {
+  const user = await createNewUser(username, userId);
+  const cards = await db
+    .select()
+    .from(cardTable)
+    .where(eq(cardTable.user_id, user.id));
+
+  return cards;
+}
+
 // creates a new user in the db if the user isn't added yet
 export async function createNewUser(
   username: string,

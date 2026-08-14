@@ -8,6 +8,7 @@ import {
   REST,
   Routes,
   SlashCommandBuilder,
+  MessageFlags,
 } from "discord.js";
 import {
   getUserCount,
@@ -16,7 +17,9 @@ import {
   voucherReceiveCommand,
   buyPackCommand,
   openPackCommand,
+  getCards,
 } from "./db/db";
+import { createOverviewContainer } from "./display";
 
 import { serve } from "@hono/node-server";
 
@@ -50,6 +53,27 @@ const commands: Command[] = [
     async execute(interaction) {
       const count = await getUserCount();
       await interaction.reply(`We have ${count} users in the db.`);
+    },
+  },
+  {
+    data: new SlashCommandBuilder()
+      .setName("overview")
+      .setDescription("Get an overview of your cards."),
+    async execute(interaction) {
+      const userCards = await getCards(
+        interaction.user.username,
+        interaction.user.id,
+      );
+
+      const container = createOverviewContainer(
+        interaction.user.username,
+        userCards,
+      );
+
+      await interaction.reply({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+      });
     },
   },
   {
@@ -176,12 +200,24 @@ async function register() {
 
 // Handle slash commands
 client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  if (interaction.isButton()) {
+    if (interaction.customId === "my_button") {
+      await interaction.reply({
+        content: "You clicked the button!",
+      });
+    }
+  }
 
-  const command = commands.find((c) => c.data.name === interaction.commandName);
-  if (!command) return;
+  if (interaction.isChatInputCommand()) {
+    const command = commands.find(
+      (c) => c.data.name === interaction.commandName,
+    );
+    if (!command) return;
 
-  await command.execute(interaction);
+    await command.execute(interaction);
+  }
+
+  return;
 });
 
 client.once(Events.ClientReady, (readyClient) => {
