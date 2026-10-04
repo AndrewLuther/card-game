@@ -6,8 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "tsx ./src/index.tsx",
-    "db_example": "tsx ./src/drizzle-example.ts",
-    "cardtype_update": "tsx ./src/cardTypes.ts"
+    "cardTypes": "tsx ./src/cardTypes.ts",
+    "db:push": "npx drizzle-kit push"
   },
   "repository": {
     "type": "git",

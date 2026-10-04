@@ -1,16 +1,5 @@
-import satori from "satori";
-import * as fs from "node:fs";
-import { baseUrl } from ".";
-import { Hono } from "hono";
-import { serveStatic } from "@hono/node-server/serve-static";
-import { serve } from "@hono/node-server";
-import { Resvg } from "@resvg/resvg-js";
-
 import { Page } from "puppeteer";
-
-const honoApp = new Hono();
-honoApp.use("/images/*", serveStatic({ root: "./public" }));
-export default honoApp;
+import { BASE_URL } from "./config";
 
 type RarityColors = {
   color1: string;
@@ -96,7 +85,7 @@ export async function createCardPNG(
       border-width:5px;
       border-color:white;
     ">
-      <img src="${baseUrl}/${imagePath}" style="width:100%;" />
+      <img src="${BASE_URL}/${imagePath}" style="width:100%;" />
     </div>
 
     <div style="

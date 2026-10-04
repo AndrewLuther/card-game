@@ -10,6 +10,11 @@ import {
   SlashCommandBuilder,
   MessageFlags,
 } from "discord.js";
+import { serve } from "@hono/node-server";
+import puppeteer, { Browser } from "puppeteer";
+import { Hono } from "hono";
+import { serveStatic } from "@hono/node-server/serve-static";
+
 import {
   getUserCount,
   createNewUser,
@@ -20,21 +25,7 @@ import {
   getCards,
 } from "./db/db";
 import { createOverviewContainer } from "./display";
-
-import { serve } from "@hono/node-server";
-
-import honoApp from "./card-display";
-
-import puppeteer, { Browser } from "puppeteer";
-
-export const baseUrl =
-  process.env.NODE_ENV === "production"
-    ? "https://myapp.com"
-    : "http://localhost:3000";
-
-const TOKEN = process.env.DISCORD_BOT_TOKEN!;
-const CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
-const GUILD_ID = process.env.DISCORD_GUILD_ID; // optional
+import { CLIENT_ID, GUILD_ID, TOKEN } from "./config";
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -227,7 +218,11 @@ client.once(Events.ClientReady, (readyClient) => {
 (async () => {
   await register();
   await client.login(TOKEN);
+
+  const honoApp = new Hono();
+  honoApp.use("/images/*", serveStatic({ root: "./public" }));
   serve(honoApp);
+
   browser = await puppeteer.launch({
     headless: true,
   });
