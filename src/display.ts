@@ -1,14 +1,11 @@
 import {
   ContainerBuilder,
-  SectionBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  MessageFlags,
-  StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
   TextDisplayBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
 } from "discord.js";
 import type { Card } from "./types";
+import { baseUrl } from ".";
 
 export function createOverviewContainer(username: String, userCards: Card[]) {
   //   const button = new ButtonBuilder()
@@ -25,38 +22,49 @@ export function createOverviewContainer(username: String, userCards: Card[]) {
   //         .setStyle(ButtonStyle.Primary),
   //     );
 
+  //console.log(userCards);
+
+  const numUniqueCards = new Set(userCards.map((row) => row.cardtype_id)).size;
+
   const text = new TextDisplayBuilder().setContent(
-    `**${username}** | ${userCards.length} Cards`,
+    `**${username}** | ${userCards.length} total card(s) | ${numUniqueCards} unique card(s)`,
   );
+
+  console.log(baseUrl + "/images/guppy.png");
 
   const container = new ContainerBuilder()
     .addTextDisplayComponents(text)
-    .setAccentColor(0);
+    .setAccentColor(0)
+    .addMediaGalleryComponents(
+      new MediaGalleryBuilder().addItems(
+        new MediaGalleryItemBuilder().setURL(baseUrl + "/images/guppy.png"),
+      ),
+    );
   return container;
 }
 
-export function createMenu() {
-  const favoriteStarterSelect = new StringSelectMenuBuilder()
-    .setCustomId("starter")
-    .setPlaceholder("Make a selection!")
-    .addOptions(
-      // String select menu options
-      new StringSelectMenuOptionBuilder()
-        // Label displayed to user
-        .setLabel("Bulbasaur")
-        // Description of option
-        .setDescription("The dual-type Grass/Poison Seed Pokémon.")
-        // Value returned in select menu interaction
-        .setValue("bulbasaur"),
-      new StringSelectMenuOptionBuilder()
-        .setLabel("Charmander")
-        .setDescription("The Fire-type Lizard Pokémon.")
-        .setValue("charmander"),
-      new StringSelectMenuOptionBuilder()
-        .setLabel("Squirtle")
-        .setDescription("The Water-type Tiny Turtle Pokémon.")
-        .setValue("squirtle"),
-    );
+// export function createMenu() {
+//   const favoriteStarterSelect = new StringSelectMenuBuilder()
+//     .setCustomId("starter")
+//     .setPlaceholder("Make a selection!")
+//     .addOptions(
+//       // String select menu options
+//       new StringSelectMenuOptionBuilder()
+//         // Label displayed to user
+//         .setLabel("Bulbasaur")
+//         // Description of option
+//         .setDescription("The dual-type Grass/Poison Seed Pokémon.")
+//         // Value returned in select menu interaction
+//         .setValue("bulbasaur"),
+//       new StringSelectMenuOptionBuilder()
+//         .setLabel("Charmander")
+//         .setDescription("The Fire-type Lizard Pokémon.")
+//         .setValue("charmander"),
+//       new StringSelectMenuOptionBuilder()
+//         .setLabel("Squirtle")
+//         .setDescription("The Water-type Tiny Turtle Pokémon.")
+//         .setValue("squirtle"),
+//     );
 
-  return favoriteStarterSelect;
-}
+//   return favoriteStarterSelect;
+// }

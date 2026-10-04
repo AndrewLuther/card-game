@@ -14,7 +14,7 @@ import { eq, and } from "drizzle-orm";
 
 import { Browser, Page } from "puppeteer";
 
-import { createCardPNG } from "../card";
+import { createCardPNG } from "../card-display";
 
 export const db = drizzle(process.env.DB_FILE_NAME!);
 

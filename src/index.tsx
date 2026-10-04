@@ -23,7 +23,7 @@ import { createOverviewContainer } from "./display";
 
 import { serve } from "@hono/node-server";
 
-import honoApp from "./card";
+import honoApp from "./card-display";
 
 import puppeteer, { Browser } from "puppeteer";
 

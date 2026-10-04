@@ -45,6 +45,8 @@ const rarityColors = new Map<number, RarityColors>([
   ],
 ]);
 
+export async function createCollectionPng() {}
+
 export async function createCardPNG(
   page: Page,
   cardName: string,
