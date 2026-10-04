@@ -1,7 +1,5 @@
 import {
-  cardrarityTable,
   cardTable,
-  cardtypeTable,
   packTable,
   userTable,
 } from "./db/schema";

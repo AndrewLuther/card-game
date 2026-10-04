@@ -5,7 +5,7 @@ import {
   MediaGalleryItemBuilder,
 } from "discord.js";
 import type { Card } from "./types";
-import { baseUrl } from ".";
+import { BASE_URL } from "./config";
 
 export function createOverviewContainer(username: String, userCards: Card[]) {
   //   const button = new ButtonBuilder()
@@ -30,14 +30,14 @@ export function createOverviewContainer(username: String, userCards: Card[]) {
     `**${username}** | ${userCards.length} total card(s) | ${numUniqueCards} unique card(s)`,
   );
 
-  console.log(baseUrl + "/images/guppy.png");
+  console.log(BASE_URL + "/images/guppy.png");
 
   const container = new ContainerBuilder()
     .addTextDisplayComponents(text)
     .setAccentColor(0)
     .addMediaGalleryComponents(
       new MediaGalleryBuilder().addItems(
-        new MediaGalleryItemBuilder().setURL(baseUrl + "/images/guppy.png"),
+        new MediaGalleryItemBuilder().setURL(BASE_URL + "/images/guppy.png"),
       ),
     );
   return container;
