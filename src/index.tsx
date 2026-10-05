@@ -26,6 +26,8 @@ import {
 } from "./db/db";
 import { createOverviewContainer } from "./display";
 import { CLIENT_ID, GUILD_ID, TOKEN } from "./config";
+import { Card, Collection } from "./card-display";
+import { BASE_URL } from "./config";
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -221,6 +223,51 @@ client.once(Events.ClientReady, (readyClient) => {
 
   const honoApp = new Hono();
   honoApp.use("/images/*", serveStatic({ root: "./public" }));
+  honoApp.get("/card", (c) =>
+    c.html(
+      <Card
+        cardName="idk"
+        imagePath="images/guppy.png"
+        author="AL"
+        cardIndex={0}
+        rarityId={2}
+        cardsInSet={0}
+      />,
+    ),
+  );
+
+  honoApp.get("/collection", (c) =>
+    c.html(
+      <Collection
+        cardDisplays={[
+          {
+            cardName: "a",
+            imagePath: "images/guppy.png",
+            author: "AL",
+            cardIndex: 0,
+            rarityId: 1,
+            cardsInSet: 2,
+          },
+          {
+            cardName: "b",
+            imagePath: "images/guppy.png",
+            author: "AL",
+            cardIndex: 0,
+            rarityId: 2,
+            cardsInSet: 2,
+          },
+          {
+            cardName: "c",
+            imagePath: "images/guppy.png",
+            author: "AL",
+            cardIndex: 0,
+            rarityId: 0,
+            cardsInSet: 2,
+          },
+        ]}
+      />,
+    ),
+  );
   serve(honoApp);
 
   browser = await puppeteer.launch({

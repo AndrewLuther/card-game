@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "target": "es2022",

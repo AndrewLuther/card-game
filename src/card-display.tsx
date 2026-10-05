@@ -1,5 +1,7 @@
 import { Page } from "puppeteer";
 import { BASE_URL } from "./config";
+import type { CardDisplay } from "./types";
+import { renderToString } from "hono/jsx/dom/server";
 
 type RarityColors = {
   color1: string;
@@ -34,26 +36,35 @@ const rarityColors = new Map<number, RarityColors>([
   ],
 ]);
 
-export async function createCollectionPng() {}
+type CollectionProps = {
+  cardDisplays: Array<CardDisplay>;
+};
 
-export async function createCardPNG(
-  page: Page,
-  cardName: string,
-  imagePath: string,
-  author: string,
-  cardIndex: number,
-  rarityId: number,
-  cardsInSet: number,
-): Promise<Buffer> {
-  const rarityString = "*".repeat(rarityId + 1);
+export function Collection({ cardDisplays }: CollectionProps) {
+  return (
+    <div
+      style="
+    display: grid;
+    grid-template-columns: repeat(4, 300px);
+    gap: 40px;"
+    >
+      {cardDisplays.map((cardDisplay) => (
+        <Card {...cardDisplay} />
+      ))}
+    </div>
+  );
+}
 
-  const colors = rarityColors.get(rarityId)!;
+export function Card(cardDisplayInfo: CardDisplay) {
+  const rarityString = "*".repeat(cardDisplayInfo.rarityId + 1);
 
-  const html = `
-  <div style="
+  const colors = rarityColors.get(cardDisplayInfo.rarityId)!;
+  return (
+    <div
+      style={`
     display:flex;
-    height:auto;
-    width:auto;
+    height:400px;
+    width:300px;
     background-color:${colors.color1};
     color:white;
     justify-content:center;
@@ -64,18 +75,22 @@ export async function createCardPNG(
     border-style:solid;
     border-color: #c5c6c7;
     box-shadow:inset 0px 0px 80px 8px ${colors.color3};
-  ">
-    <div style="
+  `}
+    >
+      <div
+        style={`
       display:flex;
       width:85%;
       align-items:stretch;
       justify-content:space-between;
       flex-direction:row;
-    ">
-      <p style="display:flex;">${cardName}</p>
-    </div>
+    `}
+      >
+        <p style="display:flex;">{cardDisplayInfo.cardName}</p>
+      </div>
 
-    <div style="
+      <div
+        style={`
       display:flex;
       width:90%;
       background-color:${colors.color2};
@@ -84,31 +99,63 @@ export async function createCardPNG(
       border-radius:20px;
       border-width:5px;
       border-color:white;
-    ">
-      <img src="${BASE_URL}/${imagePath}" style="width:100%;" />
-    </div>
+    `}
+      >
+        <img
+          src={`${BASE_URL}/${cardDisplayInfo.imagePath}`}
+          style="width:100%;"
+        />
+      </div>
 
-    <div style="
+      <div
+        style="
       display:flex;
       width:90%;
       align-items:stretch;
       justify-content:space-between;
       flex-direction:row;
-    ">
-      <p style="display:flex;">${author}</p>
-      <p style="display:flex;">${cardIndex}/${cardsInSet} ${rarityString}</p>
+    "
+      >
+        <p style="display:flex;">{cardDisplayInfo.author}</p>
+        <p style="display:flex;">
+          {cardDisplayInfo.cardIndex}/{cardDisplayInfo.cardsInSet}{" "}
+          {rarityString}
+        </p>
+      </div>
     </div>
-  </div>
-  `;
+  );
+}
 
+export async function getBufferFromHTML(page: Page, html: string) {
+  await page.setContent(html);
+  const pngBuffer = await page.screenshot({ omitBackground: true });
+  return Buffer.from(pngBuffer);
+}
+
+export async function createCollectionPNG(
+  page: Page,
+  cardDisplays: Array<CardDisplay>,
+) {
+  await page.setViewport({
+    width: 1350,
+    height: 500,
+  });
+
+  const collectionHtml = renderToString(
+    <Collection cardDisplays={cardDisplays} />,
+  );
+  return await getBufferFromHTML(page, collectionHtml);
+}
+
+export async function createCardPNG(
+  page: Page,
+  cardDisplayInfo: CardDisplay,
+): Promise<Buffer> {
   await page.setViewport({
     width: 512,
     height: 580,
   });
 
-  await page.setContent(html);
-
-  const pngbuffer = await page.screenshot({ omitBackground: true });
-
-  return Buffer.from(pngbuffer);
+  const cardHtml = renderToString(<Card {...cardDisplayInfo} />);
+  return await getBufferFromHTML(page, cardHtml);
 }

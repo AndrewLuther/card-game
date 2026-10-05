@@ -8,13 +8,13 @@ import {
   userTable,
 } from "./schema";
 
-import type { User, Pack } from "../types";
+import type { User, Pack, CardDisplay } from "../types";
 
 import { eq, and } from "drizzle-orm";
 
 import { Browser, Page } from "puppeteer";
 
-import { createCardPNG } from "../card-display";
+import { createCardPNG, createCollectionPNG } from "../card-display";
 
 export const db = drizzle(process.env.DB_FILE_NAME!);
 
@@ -190,7 +190,9 @@ export async function openPackCommand(
 
     type Card = { user_id: number; cardtype_id: number };
     const cards: Array<Card> = [];
-    const cardImagePaths: Array<Buffer> = [];
+    // const cardImagePaths: Array<Buffer> = [];
+
+    const cardDisplays: Array<CardDisplay> = [];
 
     // create the cards
     for (let i = 0; i < cardsPerPack; i++) {
@@ -220,26 +222,30 @@ export async function openPackCommand(
       const cardType = cardTypesWithRarity[cardtypeIndex];
       cards.push({ user_id: user.id, cardtype_id: cardType?.id! });
 
-      const page: Page = await browser.newPage();
-      try {
-        const pngBuffer = await createCardPNG(
-          page,
-          `${cardType?.name!}`,
-          `${cardType?.image_path}`,
-          `${cardType?.illustrator}`,
-          cardType?.id!,
-          cardType?.rarity_id!,
-          cardTypes.length,
-        );
+      const cardInfo: CardDisplay = {
+        cardName: `${cardType?.name!}`,
+        imagePath: `${cardType?.image_path}`,
+        author: `${cardType?.illustrator}`,
+        cardIndex: cardType?.id!,
+        rarityId: cardType?.rarity_id!,
+        cardsInSet: cardTypes.length,
+      };
 
-        cardImagePaths.push(pngBuffer);
-      } finally {
-        await page.close();
-      }
+      cardDisplays.push(cardInfo);
+    }
+
+    const page: Page = await browser.newPage();
+    const collectionImagePathArray: Array<Buffer> = [];
+
+    try {
+      const pngBuffer = await createCollectionPNG(page, cardDisplays);
+      collectionImagePathArray.push(pngBuffer);
+    } finally {
+      await page.close();
     }
 
     await db.insert(cardTable).values(cards);
 
-    return { cardImagePaths };
+    return { cardImagePaths: collectionImagePathArray };
   }
 }
