@@ -172,6 +172,13 @@ const commands: Command[] = [
       });
     },
   },
+
+  {
+    data: new SlashCommandBuilder()
+      .setName("view-collection")
+      .setDescription("View which cards you currently own."),
+    async execute(interaction) {},
+  },
 ];
 
 // Register
@@ -263,6 +270,23 @@ client.once(Events.ClientReady, (readyClient) => {
             cardIndex: 0,
             rarityId: 0,
             cardsInSet: 2,
+          },
+          {
+            cardName: "d",
+            imagePath: "images/guppy.png",
+            author: "AL",
+            cardIndex: 0,
+            rarityId: 2,
+            cardsInSet: 2,
+          },
+          {
+            cardName: "d",
+            imagePath: "images/guppy.png",
+            author: "AL",
+            cardIndex: 0,
+            rarityId: 2,
+            cardsInSet: 2,
+            displayCount: 1,
           },
         ]}
       />,

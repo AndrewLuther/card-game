@@ -188,8 +188,8 @@ export async function openPackCommand(
 
     cardrarities.sort((a, b) => b.value - a.value);
 
-    type Card = { user_id: number; cardtype_id: number };
-    const cards: Array<Card> = [];
+    type CardData = { user_id: number; cardtype_id: number };
+    const cards: Array<CardData> = [];
     // const cardImagePaths: Array<Buffer> = [];
 
     const cardDisplays: Array<CardDisplay> = [];

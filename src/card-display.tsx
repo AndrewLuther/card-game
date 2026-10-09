@@ -60,8 +60,9 @@ export function Card(cardDisplayInfo: CardDisplay) {
 
   const colors = rarityColors.get(cardDisplayInfo.rarityId)!;
   return (
-    <div
-      style={`
+    <div style="position: relative;">
+      <div
+        style={`
     display:flex;
     height:400px;
     width:300px;
@@ -76,21 +77,21 @@ export function Card(cardDisplayInfo: CardDisplay) {
     border-color: #c5c6c7;
     box-shadow:inset 0px 0px 80px 8px ${colors.color3};
   `}
-    >
-      <div
-        style={`
+      >
+        <div
+          style={`
       display:flex;
       width:85%;
       align-items:stretch;
       justify-content:space-between;
       flex-direction:row;
     `}
-      >
-        <p style="display:flex;">{cardDisplayInfo.cardName}</p>
-      </div>
+        >
+          <p style="display:flex;">{cardDisplayInfo.cardName}</p>
+        </div>
 
-      <div
-        style={`
+        <div
+          style={`
       display:flex;
       width:90%;
       background-color:${colors.color2};
@@ -100,28 +101,48 @@ export function Card(cardDisplayInfo: CardDisplay) {
       border-width:5px;
       border-color:white;
     `}
-      >
-        <img
-          src={`${BASE_URL}/${cardDisplayInfo.imagePath}`}
-          style="width:100%;"
-        />
-      </div>
+        >
+          <img
+            src={`${BASE_URL}/${cardDisplayInfo.imagePath}`}
+            style="width:100%;"
+          />
+        </div>
 
-      <div
-        style="
+        <div
+          style="
       display:flex;
       width:90%;
       align-items:stretch;
       justify-content:space-between;
       flex-direction:row;
     "
-      >
-        <p style="display:flex;">{cardDisplayInfo.author}</p>
-        <p style="display:flex;">
-          {cardDisplayInfo.cardIndex}/{cardDisplayInfo.cardsInSet}{" "}
-          {rarityString}
-        </p>
+        >
+          <p style="display:flex;">{cardDisplayInfo.author}</p>
+          <p style="display:flex;">
+            {cardDisplayInfo.cardIndex}/{cardDisplayInfo.cardsInSet}{" "}
+            {rarityString}
+          </p>
+        </div>
       </div>
+
+      {cardDisplayInfo.displayCount !== undefined && (
+        <div
+          style="
+        position: absolute;
+        top: 0;
+        right: 100;
+        background: #c5c6c7e6;
+        padding: 10px 30px;
+        border-radius: 0 0 10px 10px;
+        font-weight: bold;
+        font-size: 25px;
+        z-index: 1;
+        box-shadow: 0px 8px 7px 4px rgba(0, 0, 0, 0.2);
+    "
+        >
+          {cardDisplayInfo.displayCount}
+        </div>
+      )}
     </div>
   );
 }

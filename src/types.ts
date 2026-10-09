@@ -11,4 +11,5 @@ export type CardDisplay = {
   cardIndex: number;
   rarityId: number;
   cardsInSet: number;
+  displayCount?: number | undefined;
 };
