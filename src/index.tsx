@@ -162,10 +162,13 @@ const commands: Command[] = [
       const viewCollectionResponse = await viewCollectionCommand(
         setNumber,
         interaction.user.id!,
+        interaction.user.username,
         browser,
       );
+      const completionEmoji =
+        viewCollectionResponse?.completion_percent == 100 ? "👑" : "";
       await interaction.editReply({
-        content: `Your current collection for Set-${setNumber}`,
+        content: `Your collection for Set-${setNumber} is **${viewCollectionResponse?.completion_percent.toPrecision(3)}%** complete! ${completionEmoji}`,
         files: viewCollectionResponse!.collectionImagePaths,
       });
     },
@@ -253,6 +256,7 @@ client.once(Events.ClientReady, (readyClient) => {
             cardIndex: 0,
             rarityId: 2,
             cardsInSet: 2,
+            displayCount: 4,
           },
           {
             cardName: "c",
@@ -261,14 +265,7 @@ client.once(Events.ClientReady, (readyClient) => {
             cardIndex: 0,
             rarityId: 0,
             cardsInSet: 2,
-          },
-          {
-            cardName: "d",
-            imagePath: "images/guppy.png",
-            author: "AL",
-            cardIndex: 0,
-            rarityId: 2,
-            cardsInSet: 2,
+            displayCount: 3,
           },
           {
             cardName: "d",
@@ -278,6 +275,15 @@ client.once(Events.ClientReady, (readyClient) => {
             rarityId: 2,
             cardsInSet: 2,
             displayCount: 1,
+          },
+          {
+            cardName: "d",
+            imagePath: "images/guppy.png",
+            author: "AL",
+            cardIndex: 0,
+            rarityId: 2,
+            cardsInSet: 2,
+            displayCount: 0,
           },
         ]}
       />,

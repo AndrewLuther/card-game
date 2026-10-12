@@ -36,6 +36,12 @@ const rarityColors = new Map<number, RarityColors>([
   ],
 ]);
 
+const missingColors = {
+  color1: "#ababab",
+  color2: "#c2c0c0",
+  color3: "#6a6a6a",
+};
+
 type CollectionProps = {
   cardDisplays: Array<CardDisplay>;
 };
@@ -66,7 +72,7 @@ export function Card(cardDisplayInfo: CardDisplay) {
     display:flex;
     height:400px;
     width:300px;
-    background-color:${colors.color1};
+    background-color:${cardDisplayInfo.displayCount == 0 ? missingColors.color1 : colors.color1};
     color:white;
     justify-content:center;
     align-items:center;
@@ -75,7 +81,7 @@ export function Card(cardDisplayInfo: CardDisplay) {
     border-width:10px;
     border-style:solid;
     border-color: #c5c6c7;
-    box-shadow:inset 0px 0px 80px 8px ${colors.color3};
+    box-shadow:inset 0px 0px 80px 8px ${cardDisplayInfo.displayCount == 0 ? missingColors.color3 : colors.color3};
   `}
       >
         <div
@@ -87,14 +93,18 @@ export function Card(cardDisplayInfo: CardDisplay) {
       flex-direction:row;
     `}
         >
-          <p style="display:flex;">{cardDisplayInfo.cardName}</p>
+          <p style="display:flex;">
+            {cardDisplayInfo.displayCount == 0
+              ? "???"
+              : cardDisplayInfo.cardName}
+          </p>
         </div>
 
         <div
           style={`
       display:flex;
       width:90%;
-      background-color:${colors.color2};
+      background-color:${cardDisplayInfo.displayCount == 0 ? missingColors.color2 : colors.color2};
       justify-content:center;
       align-items:center;
       border-radius:20px;
@@ -102,10 +112,15 @@ export function Card(cardDisplayInfo: CardDisplay) {
       border-color:white;
     `}
         >
-          <img
-            src={`${BASE_URL}/${cardDisplayInfo.imagePath}`}
-            style="width:100%;"
-          />
+          {cardDisplayInfo.displayCount !== 0 && (
+            <img
+              src={`${BASE_URL}/${cardDisplayInfo.imagePath}`}
+              style="width:100%;"
+            />
+          )}
+          {cardDisplayInfo.displayCount == 0 && (
+            <div style="width:100%; height:270px" />
+          )}
         </div>
 
         <div
@@ -117,7 +132,9 @@ export function Card(cardDisplayInfo: CardDisplay) {
       flex-direction:row;
     "
         >
-          <p style="display:flex;">{cardDisplayInfo.author}</p>
+          <p style="display:flex;">
+            {cardDisplayInfo.displayCount == 0 ? "???" : cardDisplayInfo.author}
+          </p>
           <p style="display:flex;">
             {cardDisplayInfo.cardIndex}/{cardDisplayInfo.cardsInSet}{" "}
             {rarityString}

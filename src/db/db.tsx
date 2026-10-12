@@ -148,10 +148,14 @@ export async function buyPackCommand(
 export async function viewCollectionCommand(
   setId: number,
   userId: string,
+  username: string,
   browser: Browser,
-): Promise<{ collectionImagePaths: Buffer[] } | null> {
-  const user = await getUser(userId);
-  const cardsInSet = await db
+): Promise<{
+  collectionImagePaths: Buffer[];
+  completion_percent: number;
+} | null> {
+  const user = await createNewUser(username, userId);
+  const userCardsInSet = await db
     .select()
     .from(cardTable)
     .leftJoin(cardtypeTable, eq(cardTable.cardtype_id, cardtypeTable.id))
@@ -164,27 +168,29 @@ export async function viewCollectionCommand(
     .from(cardtypeTable)
     .where(eq(cardtypeTable.set_id, setId));
 
-  type MapEntry = { count: number; cardType: CardType };
-  const cardCounts: Map<number, MapEntry> = new Map();
-  cardsInSet.forEach((card) => {
-    cardCounts.set(card.cardtype?.id!, {
-      count: (cardCounts.get(card.cardtype?.id!)?.count || 0) + 1,
-      cardType: card.cardtype!,
-    });
+  const cardCounts: Map<number, number> = new Map();
+
+  userCardsInSet.forEach((card) => {
+    cardCounts.set(
+      card.cardtype?.id!,
+      (cardCounts.get(card.cardtype?.id!) || 0) + 1,
+    );
   });
 
   const cardDisplays: Array<CardDisplay> = [];
-  cardCounts.forEach((value, key) => {
-    const cardInfo: CardDisplay = {
-      cardName: `${value.cardType?.name!}`,
-      imagePath: `${value.cardType?.image_path}`,
-      author: `${value.cardType?.illustrator}`,
-      cardIndex: value.cardType?.id!,
-      rarityId: value.cardType?.rarity_id!,
-      cardsInSet: allCardTypesInSet.length,
-      displayCount: value.count,
-    };
 
+  allCardTypesInSet.forEach((cardType) => {
+    const cardInfo: CardDisplay = {
+      cardName: `${cardType?.name!}`,
+      imagePath: `${cardType?.image_path}`,
+      author: `${cardType?.illustrator}`,
+      cardIndex: cardType?.id!,
+      rarityId: cardType?.rarity_id!,
+      cardsInSet: allCardTypesInSet.length,
+      displayCount: cardCounts.has(cardType.id)
+        ? cardCounts.get(cardType.id)
+        : 0,
+    };
     cardDisplays.push(cardInfo);
   });
 
@@ -195,7 +201,10 @@ export async function viewCollectionCommand(
     browser,
   );
 
-  return { collectionImagePaths: collectionBuffer };
+  return {
+    collectionImagePaths: collectionBuffer,
+    completion_percent: (cardCounts.size / allCardTypesInSet.length) * 100,
+  };
 }
 
 export async function openPackCommand(
