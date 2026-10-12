@@ -8,7 +8,7 @@ import {
   userTable,
 } from "./schema";
 
-import type { User, Pack, CardDisplay } from "../types";
+import type { User, Pack, CardDisplay, CardType } from "../types";
 
 import { eq, and } from "drizzle-orm";
 
@@ -145,11 +145,64 @@ export async function buyPackCommand(
   return { packs, user };
 }
 
+export async function viewCollectionCommand(
+  setId: number,
+  userId: string,
+  browser: Browser,
+): Promise<{ collectionImagePaths: Buffer[] } | null> {
+  const user = await getUser(userId);
+  const cardsInSet = await db
+    .select()
+    .from(cardTable)
+    .leftJoin(cardtypeTable, eq(cardTable.cardtype_id, cardtypeTable.id))
+    .where(
+      and(eq(cardTable.user_id, user.id), eq(cardtypeTable.set_id, setId)),
+    );
+
+  const allCardTypesInSet = await db
+    .select()
+    .from(cardtypeTable)
+    .where(eq(cardtypeTable.set_id, setId));
+
+  type MapEntry = { count: number; cardType: CardType };
+  const cardCounts: Map<number, MapEntry> = new Map();
+  cardsInSet.forEach((card) => {
+    cardCounts.set(card.cardtype?.id!, {
+      count: (cardCounts.get(card.cardtype?.id!)?.count || 0) + 1,
+      cardType: card.cardtype!,
+    });
+  });
+
+  const cardDisplays: Array<CardDisplay> = [];
+  cardCounts.forEach((value, key) => {
+    const cardInfo: CardDisplay = {
+      cardName: `${value.cardType?.name!}`,
+      imagePath: `${value.cardType?.image_path}`,
+      author: `${value.cardType?.illustrator}`,
+      cardIndex: value.cardType?.id!,
+      rarityId: value.cardType?.rarity_id!,
+      cardsInSet: allCardTypesInSet.length,
+      displayCount: value.count,
+    };
+
+    cardDisplays.push(cardInfo);
+  });
+
+  cardDisplays.sort((a, b) => a.cardIndex - b.cardIndex);
+
+  const collectionBuffer = await getCollectionBufferFromCardDisplays(
+    cardDisplays,
+    browser,
+  );
+
+  return { collectionImagePaths: collectionBuffer };
+}
+
 export async function openPackCommand(
   username: string,
   userId: string,
   browser: Browser,
-): Promise<{ cardImagePaths: Buffer[] } | null> {
+): Promise<{ collectionImagePaths: Buffer[] } | null> {
   await createNewUser(username, userId);
   const packs = await getPacks(userId);
   if (packs.length <= 0) {
@@ -234,18 +287,30 @@ export async function openPackCommand(
       cardDisplays.push(cardInfo);
     }
 
-    const page: Page = await browser.newPage();
-    const collectionImagePathArray: Array<Buffer> = [];
-
-    try {
-      const pngBuffer = await createCollectionPNG(page, cardDisplays);
-      collectionImagePathArray.push(pngBuffer);
-    } finally {
-      await page.close();
-    }
-
     await db.insert(cardTable).values(cards);
 
-    return { cardImagePaths: collectionImagePathArray };
+    const collectionBuffer = await getCollectionBufferFromCardDisplays(
+      cardDisplays,
+      browser,
+    );
+
+    return { collectionImagePaths: collectionBuffer };
   }
+}
+
+export async function getCollectionBufferFromCardDisplays(
+  cardDisplays: Array<CardDisplay>,
+  browser: Browser,
+): Promise<Buffer[]> {
+  const page: Page = await browser.newPage();
+  const collectionImagePathArray: Array<Buffer> = [];
+
+  try {
+    const pngBuffer = await createCollectionPNG(page, cardDisplays);
+    collectionImagePathArray.push(pngBuffer);
+  } finally {
+    await page.close();
+  }
+
+  return collectionImagePathArray;
 }

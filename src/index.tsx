@@ -23,8 +23,8 @@ import {
   buyPackCommand,
   openPackCommand,
   getCards,
+  viewCollectionCommand,
 } from "./db/db";
-import { createOverviewContainer } from "./display";
 import { CLIENT_ID, GUILD_ID, TOKEN } from "./config";
 import { Card, Collection } from "./card-display";
 import { BASE_URL } from "./config";
@@ -46,27 +46,6 @@ const commands: Command[] = [
     async execute(interaction) {
       const count = await getUserCount();
       await interaction.reply(`We have ${count} users in the db.`);
-    },
-  },
-  {
-    data: new SlashCommandBuilder()
-      .setName("overview")
-      .setDescription("Get an overview of your cards."),
-    async execute(interaction) {
-      const userCards = await getCards(
-        interaction.user.username,
-        interaction.user.id,
-      );
-
-      const container = createOverviewContainer(
-        interaction.user.username,
-        userCards,
-      );
-
-      await interaction.reply({
-        components: [container],
-        flags: MessageFlags.IsComponentsV2,
-      });
     },
   },
   {
@@ -144,7 +123,7 @@ const commands: Command[] = [
       } else {
         await interaction.editReply({
           content: "Fished up four new cards!",
-          files: openPackResponse.cardImagePaths,
+          files: openPackResponse.collectionImagePaths,
         });
       }
     },
@@ -168,7 +147,7 @@ const commands: Command[] = [
       );
       await interaction.editReply({
         content: "Fished up four new cards!",
-        files: openPackResponse!.cardImagePaths,
+        files: openPackResponse!.collectionImagePaths,
       });
     },
   },
@@ -177,7 +156,19 @@ const commands: Command[] = [
     data: new SlashCommandBuilder()
       .setName("view-collection")
       .setDescription("View which cards you currently own."),
-    async execute(interaction) {},
+    async execute(interaction) {
+      await interaction.deferReply();
+      const setNumber = 0; // Hard Coded for now
+      const viewCollectionResponse = await viewCollectionCommand(
+        setNumber,
+        interaction.user.id!,
+        browser,
+      );
+      await interaction.editReply({
+        content: `Your current collection for Set-${setNumber}`,
+        files: viewCollectionResponse!.collectionImagePaths,
+      });
+    },
   },
 ];
 

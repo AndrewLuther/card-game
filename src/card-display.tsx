@@ -157,9 +157,11 @@ export async function createCollectionPNG(
   page: Page,
   cardDisplays: Array<CardDisplay>,
 ) {
+  const rows: number = Math.ceil(cardDisplays.length / 4);
+
   await page.setViewport({
     width: 1350,
-    height: 500,
+    height: 500 * rows,
   });
 
   const collectionHtml = renderToString(
