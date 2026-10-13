@@ -5,6 +5,7 @@ import {
   cardTable,
   cardtypeTable,
   packTable,
+  setTable,
   userTable,
 } from "./schema";
 
@@ -32,6 +33,11 @@ export async function getCards(username: string, userId: string) {
     .where(eq(cardTable.user_id, user.id));
 
   return cards;
+}
+
+export async function getSets() {
+  const sets = await db.select().from(setTable);
+  return sets;
 }
 
 // creates a new user in the db if the user isn't added yet
@@ -119,6 +125,7 @@ export async function voucherReceiveCommand(
 export async function buyPackCommand(
   username: string,
   userId: string,
+  setId: number,
 ): Promise<{ packs: Pack[]; user: User } | null> {
   await createNewUser(username, userId);
   let voucher = await getVoucherCount(userId);
@@ -138,7 +145,7 @@ export async function buyPackCommand(
   // add a pack to packTable associated with this user
   await db.insert(packTable).values({
     user_id: user.id,
-    set_id: 0, // currently only support one set
+    set_id: setId,
   });
 
   const packs = await getPacks(userId);

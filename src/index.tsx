@@ -9,6 +9,7 @@ import {
   Routes,
   SlashCommandBuilder,
   MessageFlags,
+  type SlashCommandOptionsOnlyBuilder,
 } from "discord.js";
 import { serve } from "@hono/node-server";
 import puppeteer, { Browser } from "puppeteer";
@@ -24,17 +25,19 @@ import {
   openPackCommand,
   getCards,
   viewCollectionCommand,
+  getSets,
 } from "./db/db";
 import { CLIENT_ID, GUILD_ID, TOKEN } from "./config";
 import { Card, Collection } from "./card-display";
 import { BASE_URL } from "./config";
+import type { Set } from "./types";
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 let browser: Browser;
 
 type Command = {
-  data: SlashCommandBuilder;
+  data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 };
 
@@ -83,11 +86,19 @@ const commands: Command[] = [
   {
     data: new SlashCommandBuilder()
       .setName("buy-pack")
-      .setDescription("Buy a pack using a pack voucher."),
+      .setDescription("Buy a pack using a pack voucher.")
+      .addIntegerOption((option) =>
+        option
+          .setName("set-number")
+          .setDescription("The set to buy a pack of")
+          .setChoices({ name: "set-1", value: 0 })
+          .setRequired(true),
+      ),
     async execute(interaction) {
       const buyPackResponse = await buyPackCommand(
         interaction.user.username,
         interaction.user.id!,
+        interaction.options.getInteger("set-number", true),
       );
 
       // if nothing was returned, its because the user has no pack vouchers
@@ -138,7 +149,7 @@ const commands: Command[] = [
         interaction.user.username!,
         interaction.user.id!,
       );
-      await buyPackCommand(interaction.user.username, interaction.user.id!);
+      await buyPackCommand(interaction.user.username, interaction.user.id!, 0);
       await interaction.deferReply();
       const openPackResponse = await openPackCommand(
         interaction.user.username!,
@@ -155,10 +166,17 @@ const commands: Command[] = [
   {
     data: new SlashCommandBuilder()
       .setName("view-collection")
-      .setDescription("View which cards you currently own."),
+      .setDescription("View which cards you currently own.")
+      .addIntegerOption((option) =>
+        option
+          .setName("set-number")
+          .setDescription("The set to view your collection of")
+          .setChoices({ name: "set-1", value: 0 })
+          .setRequired(true),
+      ),
     async execute(interaction) {
       await interaction.deferReply();
-      const setNumber = 0; // Hard Coded for now
+      const setNumber = interaction.options.getInteger("set-number", true);
       const viewCollectionResponse = await viewCollectionCommand(
         setNumber,
         interaction.user.id!,
@@ -168,7 +186,7 @@ const commands: Command[] = [
       const completionEmoji =
         viewCollectionResponse?.completion_percent == 100 ? "👑" : "";
       await interaction.editReply({
-        content: `Your collection for Set-${setNumber} is **${viewCollectionResponse?.completion_percent.toPrecision(3)}%** complete! ${completionEmoji}`,
+        content: `Your collection for set-${setNumber + 1} is **${viewCollectionResponse?.completion_percent.toPrecision(3)}%** complete! ${completionEmoji}`,
         files: viewCollectionResponse!.collectionImagePaths,
       });
     },
@@ -194,14 +212,6 @@ async function register() {
 
 // Handle slash commands
 client.on("interactionCreate", async (interaction) => {
-  if (interaction.isButton()) {
-    if (interaction.customId === "my_button") {
-      await interaction.reply({
-        content: "You clicked the button!",
-      });
-    }
-  }
-
   if (interaction.isChatInputCommand()) {
     const command = commands.find(
       (c) => c.data.name === interaction.commandName,
