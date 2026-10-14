@@ -25,65 +25,89 @@ async function main() {
   // insert all the cardTypes again
   await db.insert(cardtypeTable).values([
     {
-      set_id: 0,
+      set_id: 1,
       name: "guppy",
       image_path: "images/guppy.png",
       rarity_id: 0,
-      illustrator: "AL",
+      illustrator: "Andrew L",
     },
     {
-      set_id: 0,
+      set_id: 1,
       name: "jeff",
       image_path: "images/jeff.png",
       rarity_id: 0,
-      illustrator: "AL",
+      illustrator: "Andrew L",
     },
     {
-      set_id: 0,
+      set_id: 1,
       name: "sammy",
       image_path: "images/sammy.png",
       rarity_id: 0,
-      illustrator: "AL",
+      illustrator: "Andrew L",
     },
     {
-      set_id: 0,
+      set_id: 1,
       name: "equi",
       image_path: "images/equi.png",
       rarity_id: 1,
-      illustrator: "AL",
+      illustrator: "Andrew L",
     },
     {
-      set_id: 0,
+      set_id: 1,
       name: "ort",
       image_path: "images/ort.png",
       rarity_id: 1,
-      illustrator: "AL",
+      illustrator: "Andrew L",
     },
     {
-      set_id: 0,
+      set_id: 1,
       name: "annabelle",
       image_path: "images/annabelle.png",
       rarity_id: 2,
-      illustrator: "AL",
+      illustrator: "Andrew L",
     },
     {
-      set_id: 0,
+      set_id: 1,
       name: "globby",
       image_path: "images/globby.png",
       rarity_id: 2,
-      illustrator: "AL",
+      illustrator: "Andrew L",
+    },
+    {
+      set_id: 2,
+      name: "rock",
+      image_path: "images/rock.png",
+      rarity_id: 0,
+      illustrator: "Andrew L",
+    },
+    {
+      set_id: 2,
+      name: "paper",
+      image_path: "images/paper.png",
+      rarity_id: 1,
+      illustrator: "Andrew L",
+    },
+    {
+      set_id: 2,
+      name: "scissors",
+      image_path: "images/scissors.png",
+      rarity_id: 2,
+      illustrator: "Andrew L",
     },
   ]);
 
-  await db
-    .insert(setTable)
-    .values([
-      {
-        name: "Aquatic Beginnings",
-        imagePath: "images/guppy.png",
-        packsRemaining: 100,
-      },
-    ]);
+  await db.insert(setTable).values([
+    {
+      name: "Aquatic Beginnings",
+      imagePath: "images/guppy.png",
+      packsRemaining: 100,
+    },
+    {
+      name: "Rock Paper Scissors",
+      imagePath: "images/rock.png",
+      packsRemaining: 100,
+    },
+  ]);
 }
 
 main();

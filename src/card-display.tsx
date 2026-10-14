@@ -62,7 +62,7 @@ export function Collection({ cardDisplays }: CollectionProps) {
 }
 
 export function Card(cardDisplayInfo: CardDisplay) {
-  const rarityString = "*".repeat(cardDisplayInfo.rarityId + 1);
+  const rarityString = "◆".repeat(cardDisplayInfo.rarityId + 1);
 
   const colors = rarityColors.get(cardDisplayInfo.rarityId)!;
   return (
@@ -93,7 +93,7 @@ export function Card(cardDisplayInfo: CardDisplay) {
       flex-direction:row;
     `}
         >
-          <p style="display:flex;">
+          <p style="display:flex; font-size:30px; margin: 0 0 20px 0;">
             {cardDisplayInfo.displayCount == 0
               ? "???"
               : cardDisplayInfo.cardName}
@@ -130,13 +130,14 @@ export function Card(cardDisplayInfo: CardDisplay) {
       align-items:stretch;
       justify-content:space-between;
       flex-direction:row;
+      align-items:baseline;
     "
         >
-          <p style="display:flex;">
+          <p style="display:flex; font-size:14px; margin:0; font-style:italic; padding-left:12px;">
+            illus:{" "}
             {cardDisplayInfo.displayCount == 0 ? "???" : cardDisplayInfo.author}
           </p>
-          <p style="display:flex;">
-            {cardDisplayInfo.cardIndex}/{cardDisplayInfo.cardsInSet}{" "}
+          <p style="display:flex; font-size:20px; margin:0; padding-top:12px; padding-right:12px">
             {rarityString}
           </p>
         </div>
@@ -147,12 +148,14 @@ export function Card(cardDisplayInfo: CardDisplay) {
           style="
         position: absolute;
         top: 0;
-        right: 100;
-        background: #c5c6c7e6;
+        left: 195px;
+        width: 30px;
+        background: #edeff0f0;
         padding: 10px 30px;
         border-radius: 0 0 10px 10px;
         font-weight: bold;
         font-size: 25px;
+        text-align:center;
         z-index: 1;
         box-shadow: 0px 8px 7px 4px rgba(0, 0, 0, 0.2);
     "

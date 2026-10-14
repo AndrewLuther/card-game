@@ -59,6 +59,7 @@ export async function createNewUser(
         discordSnowflake: userId,
         packVouchers: 0,
         lastFreeVoucher: 0,
+        lastFishin: 0,
       })
       .returning();
 
@@ -68,11 +69,11 @@ export async function createNewUser(
   }
 }
 
-export async function getVoucherCount(userId: string): Promise<number> {
+export async function getVoucherCount(discordId: string): Promise<number> {
   const vouchers = await db
     .select({ vouchers: userTable.packVouchers })
     .from(userTable)
-    .where(eq(userTable.discordSnowflake, userId));
+    .where(eq(userTable.discordSnowflake, discordId));
 
   let voucher = vouchers[0]!["vouchers"];
   if (!voucher) voucher = 0;
@@ -97,29 +98,105 @@ export async function getPacks(userId: string): Promise<Pack[]> {
   return packs;
 }
 
+export async function getPacksFromSet(userId: string, setId: number) {
+  const user = await getUser(userId);
+  const packs = await db
+    .select()
+    .from(packTable)
+    .where(and(eq(packTable.user_id, user.id), eq(packTable.set_id, setId)));
+  return packs;
+}
+
+export async function addVouchers(user: User, voucherNumber: number) {
+  // get the number of vouchers the user currently has
+  let voucher = await getVoucherCount(user.discordSnowflake);
+  if (!voucher) voucher = 0;
+
+  // add the number of vouchers to the user's total
+  const userResult = await db
+    .update(userTable)
+    .set({ packVouchers: voucher + voucherNumber })
+    .where(eq(userTable.discordSnowflake, user.discordSnowflake))
+    .returning();
+
+  return userResult;
+}
+
 // MAIN API FUNCTIONS // -------------------------------------------------------------
+
+const waitTime = 86400000;
+//const waitTime = 1;
 
 export async function voucherReceiveCommand(
   username: string,
-  userId: string,
+  discordId: string,
 ): Promise<User | null> {
-  const user = await createNewUser(username, userId);
-  let voucher = await getVoucherCount(userId);
-  if (!voucher) voucher = 0;
-
-  // const waitTime = 86400000
-  const waitTime = 1;
+  const user = await createNewUser(username, discordId);
 
   if (Date.now() - user.lastFreeVoucher > waitTime) {
-    const userResult = await db
+    const userResult = await addVouchers(user, 1);
+    await db
       .update(userTable)
-      .set({ packVouchers: voucher + 1, lastFreeVoucher: Date.now() })
-      .where(eq(userTable.discordSnowflake, userId))
-      .returning();
+      .set({ lastFreeVoucher: Date.now() })
+      .where(eq(userTable.discordSnowflake, user.discordSnowflake));
     return userResult[0]!;
   } else {
     return null;
   }
+}
+
+function formatTimeFromMs(totalMs: number): string {
+  const totalSeconds = Math.floor(totalMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+export async function goFishinCommand(username: string, userId: string) {
+  const user = await createNewUser(username, userId);
+
+  const timeUntilNextFishin: string = formatTimeFromMs(
+    waitTime - (Date.now() - user.lastFishin),
+  );
+
+  const fishResponse = {
+    message: `You already went fishin today! Try again in ${timeUntilNextFishin}.`,
+  };
+
+  if (Date.now() - user.lastFishin > waitTime) {
+    const random = Math.random() * 100;
+
+    if (random < 1) {
+      // very rare event 1%
+      addVouchers(user, 20);
+      fishResponse.message = "Woah!! You got 20 pack vouchers!!";
+    } else if (random < 6) {
+      // rare event 5%
+      addVouchers(user, 10);
+      fishResponse.message = "Woah! You got 10 pack vouchers!";
+    } else if (random < 16) {
+      // pretty uncommon event 10%
+      addVouchers(user, 5);
+      fishResponse.message = "Nice! You got 5 pack vouchers!";
+    } else if (random < 41) {
+      // uncommon event 25%
+      addVouchers(user, 2);
+      fishResponse.message = "You got 2 pack vouchers!";
+    } else {
+      // common event 59%
+      addVouchers(user, 1);
+      fishResponse.message = "You got 1 pack voucher!";
+    }
+
+    await db
+      .update(userTable)
+      .set({ lastFishin: Date.now() })
+      .where(eq(userTable.discordSnowflake, user.discordSnowflake));
+  }
+
+  return fishResponse;
 }
 
 export async function buyPackCommand(
@@ -218,9 +295,10 @@ export async function openPackCommand(
   username: string,
   userId: string,
   browser: Browser,
+  setId: number,
 ): Promise<{ collectionImagePaths: Buffer[] } | null> {
   await createNewUser(username, userId);
-  const packs = await getPacks(userId);
+  const packs = await getPacksFromSet(userId, setId);
   if (packs.length <= 0) {
     return null;
   } else {
@@ -236,7 +314,7 @@ export async function openPackCommand(
     await db.delete(packTable).where(eq(packTable.id, packToOpen?.id!));
 
     // get the cardTypes that may exist within this pack
-    const cardTypes = await db // TODO get everything I need with a join here to also have rarity stuffs
+    const cardTypes = await db // TODO get everything I need with a join here to also have rarity stuff
       .select()
       .from(cardtypeTable)
       .where(eq(cardtypeTable.set_id, packToOpen?.set_id!));
@@ -259,7 +337,6 @@ export async function openPackCommand(
 
     type CardData = { user_id: number; cardtype_id: number };
     const cards: Array<CardData> = [];
-    // const cardImagePaths: Array<Buffer> = [];
 
     const cardDisplays: Array<CardDisplay> = [];
 
