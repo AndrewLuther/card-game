@@ -8,7 +8,9 @@ import {
 
 export type User = typeof userTable.$inferSelect;
 export type Pack = typeof packTable.$inferSelect;
+export type InsertPack = typeof packTable.$inferInsert;
 export type Card = typeof cardTable.$inferSelect;
+export type InserCard = typeof cardTable.$inferInsert;
 export type CardType = typeof cardtypeTable.$inferSelect;
 export type Set = typeof setTable.$inferSelect;
 
@@ -18,6 +20,5 @@ export type CardDisplay = {
   author: string;
   cardIndex: number;
   rarityId: number;
-  cardsInSet: number;
   displayCount?: number | undefined;
 };

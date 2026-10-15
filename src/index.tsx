@@ -77,12 +77,21 @@ const commands: Command[] = [
       .setName("go-fishin")
       .setDescription("See what you get! Can only do this once per day."),
     async execute(interaction) {
+      await interaction.deferReply();
       const response = await goFishinCommand(
         interaction.user.username,
         interaction.user.id,
+        browser,
       );
 
-      await interaction.reply(response.message);
+      if (response.cardBuffers) {
+        interaction.editReply({
+          content: response.message,
+          files: response.cardBuffers,
+        });
+      } else {
+        interaction.editReply(response.message);
+      }
     },
   },
   {
@@ -158,7 +167,7 @@ const commands: Command[] = [
         );
       } else {
         await interaction.editReply({
-          content: "Fished up four new cards!",
+          content: "You received four new cards!",
           files: openPackResponse.collectionImagePaths,
         });
       }
@@ -185,34 +194,34 @@ const commands: Command[] = [
     },
   },
 
-  {
-    data: new SlashCommandBuilder()
-      .setName("test-pack-open")
-      .setDescription("Just do everything needed to open a pack."),
-    async execute(interaction) {
-      const setId = 0;
-      await voucherReceiveCommand(
-        interaction.user.username!,
-        interaction.user.id!,
-      );
-      await buyPackCommand(
-        interaction.user.username,
-        interaction.user.id!,
-        setId,
-      );
-      await interaction.deferReply();
-      const openPackResponse = await openPackCommand(
-        interaction.user.username!,
-        interaction.user.id!,
-        browser,
-        setId,
-      );
-      await interaction.editReply({
-        content: "Fished up four new cards!",
-        files: openPackResponse!.collectionImagePaths,
-      });
-    },
-  },
+  // {
+  //   data: new SlashCommandBuilder()
+  //     .setName("test-pack-open")
+  //     .setDescription("Just do everything needed to open a pack."),
+  //   async execute(interaction) {
+  //     const setId = 0;
+  //     await voucherReceiveCommand(
+  //       interaction.user.username!,
+  //       interaction.user.id!,
+  //     );
+  //     await buyPackCommand(
+  //       interaction.user.username,
+  //       interaction.user.id!,
+  //       setId,
+  //     );
+  //     await interaction.deferReply();
+  //     const openPackResponse = await openPackCommand(
+  //       interaction.user.username!,
+  //       interaction.user.id!,
+  //       browser,
+  //       setId,
+  //     );
+  //     await interaction.editReply({
+  //       content: "You received four new cards!",
+  //       files: openPackResponse!.collectionImagePaths,
+  //     });
+  //   },
+  // },
 
   {
     data: new SlashCommandBuilder()
@@ -307,7 +316,6 @@ client.once(Events.ClientReady, (readyClient) => {
         author="Andrew L."
         cardIndex={1}
         rarityId={2}
-        cardsInSet={7}
         displayCount={21}
       />,
     ),
@@ -323,7 +331,6 @@ client.once(Events.ClientReady, (readyClient) => {
             author: "AL",
             cardIndex: 0,
             rarityId: 1,
-            cardsInSet: 2,
           },
           {
             cardName: "b",
@@ -331,7 +338,6 @@ client.once(Events.ClientReady, (readyClient) => {
             author: "AL",
             cardIndex: 0,
             rarityId: 2,
-            cardsInSet: 2,
             displayCount: 4,
           },
           {
@@ -340,7 +346,6 @@ client.once(Events.ClientReady, (readyClient) => {
             author: "AL",
             cardIndex: 0,
             rarityId: 0,
-            cardsInSet: 2,
             displayCount: 3,
           },
           {
@@ -349,7 +354,6 @@ client.once(Events.ClientReady, (readyClient) => {
             author: "AL",
             cardIndex: 0,
             rarityId: 2,
-            cardsInSet: 2,
             displayCount: 1,
           },
           {
@@ -358,7 +362,6 @@ client.once(Events.ClientReady, (readyClient) => {
             author: "AL",
             cardIndex: 0,
             rarityId: 2,
-            cardsInSet: 2,
             displayCount: 0,
           },
         ]}
@@ -373,6 +376,8 @@ client.once(Events.ClientReady, (readyClient) => {
 })();
 
 process.on("SIGTERM", async () => {
-  await browser.close();
+  if (browser) {
+    await browser.close();
+  }
   process.exit(0);
 });
