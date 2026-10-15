@@ -116,10 +116,7 @@ export async function addVouchers(user: User, voucherNumber: number) {
   const userResult = await db
     .update(userTable)
     .set({ packVouchers: voucher + voucherNumber })
-    .where(eq(userTable.discordSnowflake, user.discordSnowflake))
-    .returning();
-
-  return userResult;
+    .where(eq(userTable.discordSnowflake, user.discordSnowflake));
 }
 
 // MAIN API FUNCTIONS // -------------------------------------------------------------
@@ -127,22 +124,32 @@ export async function addVouchers(user: User, voucherNumber: number) {
 const waitTime = 86400000;
 //const waitTime = 1;
 
+type VoucherReceiveResponse = { message: string };
+
 export async function voucherReceiveCommand(
   username: string,
   discordId: string,
-): Promise<User | null> {
+): Promise<VoucherReceiveResponse> {
   const user = await createNewUser(username, discordId);
+  const timeUntilNextVoucher: string = formatTimeFromMs(
+    waitTime - (Date.now() - user.lastFreeVoucher),
+  );
+
+  const voucherReceiveResponse = {
+    message: `You already received a free voucher today! Try again in ${timeUntilNextVoucher}.`,
+  };
 
   if (Date.now() - user.lastFreeVoucher > waitTime) {
-    const userResult = await addVouchers(user, 1);
-    await db
+    const userResult = await db
       .update(userTable)
       .set({ lastFreeVoucher: Date.now() })
-      .where(eq(userTable.discordSnowflake, user.discordSnowflake));
-    return userResult[0]!;
-  } else {
-    return null;
+      .where(eq(userTable.discordSnowflake, user.discordSnowflake))
+      .returning();
+
+    voucherReceiveResponse.message = `You now have ${userResult[0]!.packVouchers} pack vouchers!`;
   }
+
+  return voucherReceiveResponse;
 }
 
 function formatTimeFromMs(totalMs: number): string {

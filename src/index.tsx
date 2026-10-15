@@ -32,6 +32,7 @@ import {
   getPacks,
   goFishinCommand,
 } from "./db/db";
+
 import { CLIENT_ID, GUILD_ID, TOKEN } from "./config";
 import { Card, Collection } from "./card-display";
 import { BASE_URL } from "./config";
@@ -50,15 +51,6 @@ type Command = {
 const commands: Command[] = [
   {
     data: new SlashCommandBuilder()
-      .setName("users")
-      .setDescription("Get number of users from the db."),
-    async execute(interaction) {
-      const count = await getUserCount();
-      await interaction.reply(`We have ${count} users in the db.`);
-    },
-  },
-  {
-    data: new SlashCommandBuilder()
       .setName("voucher-number")
       .setDescription("See how many vouchers you have."),
     async execute(interaction) {
@@ -73,20 +65,11 @@ const commands: Command[] = [
       .setName("voucher-receive")
       .setDescription("Receive your daily pack vouchers."),
     async execute(interaction) {
-      const user = await voucherReceiveCommand(
+      const response = await voucherReceiveCommand(
         interaction.user.username!,
         interaction.user.id!,
       );
-
-      if (!user) {
-        await interaction.reply(
-          `You have already received your free voucher for the day! Check back tomorrow.`,
-        );
-      } else {
-        await interaction.reply(
-          `You now have ${user.packVouchers} pack vouchers!`,
-        );
-      }
+      await interaction.reply(response.message);
     },
   },
   {

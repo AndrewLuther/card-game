@@ -2,6 +2,9 @@ import { Page } from "puppeteer";
 import { BASE_URL } from "./config";
 import type { CardDisplay } from "./types";
 import { renderToString } from "hono/jsx/dom/server";
+import { readFileSync } from "node:fs";
+
+const css = readFileSync("./src/Card.css", "utf-8");
 
 type RarityColors = {
   color1: string;
@@ -66,104 +69,64 @@ export function Card(cardDisplayInfo: CardDisplay) {
 
   const colors = rarityColors.get(cardDisplayInfo.rarityId)!;
   return (
-    <div style="position: relative;">
-      <div
-        style={`
-    display:flex;
-    height:400px;
-    width:300px;
-    background-color:${cardDisplayInfo.displayCount == 0 ? missingColors.color1 : colors.color1};
-    color:white;
-    justify-content:center;
-    align-items:center;
-    flex-direction:column;
-    border-radius:40px;
-    border-width:10px;
-    border-style:solid;
-    border-color: #c5c6c7;
-    box-shadow:inset 0px 0px 80px 8px ${cardDisplayInfo.displayCount == 0 ? missingColors.color3 : colors.color3};
-  `}
-      >
+    <>
+      <style>{css}</style>
+      <div className="card-container">
         <div
-          style={`
-      display:flex;
-      width:85%;
-      align-items:stretch;
-      justify-content:space-between;
-      flex-direction:row;
-    `}
+          className="card"
+          style={{
+            "--card-color-1":
+              cardDisplayInfo.displayCount == 0
+                ? missingColors.color1
+                : colors.color1,
+            "--card-color-2":
+              cardDisplayInfo.displayCount == 0
+                ? missingColors.color2
+                : colors.color2,
+            "--card-color-3":
+              cardDisplayInfo.displayCount == 0
+                ? missingColors.color3
+                : colors.color3,
+          }}
         >
-          <p style="display:flex; font-size:30px; margin: 0 0 20px 0;">
-            {cardDisplayInfo.displayCount == 0
-              ? "???"
-              : cardDisplayInfo.cardName}
-          </p>
+          <div className="card-header">
+            <p className="card-name">
+              {cardDisplayInfo.displayCount == 0
+                ? "???"
+                : cardDisplayInfo.cardName}
+            </p>
+          </div>
+
+          <div className="card-image-container">
+            {cardDisplayInfo.displayCount !== 0 && (
+              <img
+                src={`${BASE_URL}/${cardDisplayInfo.imagePath}`}
+                className="card-image"
+              />
+            )}
+
+            {cardDisplayInfo.displayCount == 0 && (
+              <div className="card-image-placeholder" />
+            )}
+          </div>
+
+          <div className="card-footer">
+            <p className="card-author">
+              illus:{" "}
+              {cardDisplayInfo.displayCount == 0
+                ? "???"
+                : cardDisplayInfo.author}
+            </p>
+
+            <p className="card-rarity">{rarityString}</p>
+          </div>
         </div>
 
-        <div
-          style={`
-      display:flex;
-      width:90%;
-      background-color:${cardDisplayInfo.displayCount == 0 ? missingColors.color2 : colors.color2};
-      justify-content:center;
-      align-items:center;
-      border-radius:20px;
-      border-width:5px;
-      border-color:white;
-    `}
-        >
-          {cardDisplayInfo.displayCount !== 0 && (
-            <img
-              src={`${BASE_URL}/${cardDisplayInfo.imagePath}`}
-              style="width:100%;"
-            />
-          )}
-          {cardDisplayInfo.displayCount == 0 && (
-            <div style="width:100%; height:270px" />
-          )}
-        </div>
-
-        <div
-          style="
-      display:flex;
-      width:90%;
-      align-items:stretch;
-      justify-content:space-between;
-      flex-direction:row;
-      align-items:baseline;
-    "
-        >
-          <p style="display:flex; font-size:14px; margin:0; font-style:italic; padding-left:12px;">
-            illus:{" "}
-            {cardDisplayInfo.displayCount == 0 ? "???" : cardDisplayInfo.author}
-          </p>
-          <p style="display:flex; font-size:20px; margin:0; padding-top:12px; padding-right:12px">
-            {rarityString}
-          </p>
-        </div>
+        {cardDisplayInfo.displayCount !== undefined && (
+          <div className="card-count">{cardDisplayInfo.displayCount}</div>
+        )}
       </div>
-
-      {cardDisplayInfo.displayCount !== undefined && (
-        <div
-          style="
-        position: absolute;
-        top: 0;
-        left: 195px;
-        width: 30px;
-        background: #edeff0f0;
-        padding: 10px 30px;
-        border-radius: 0 0 10px 10px;
-        font-weight: bold;
-        font-size: 25px;
-        text-align:center;
-        z-index: 1;
-        box-shadow: 0px 8px 7px 4px rgba(0, 0, 0, 0.2);
-    "
-        >
-          {cardDisplayInfo.displayCount}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 
@@ -180,8 +143,9 @@ export async function createCollectionPNG(
   const rows: number = Math.ceil(cardDisplays.length / 4);
 
   await page.setViewport({
-    width: 1350,
-    height: 500 * rows,
+    width: 1390,
+    height: 420 * rows + 40 * (rows - 1) + 40,
+    deviceScaleFactor: 2,
   });
 
   const collectionHtml = renderToString(
